@@ -6,18 +6,29 @@ using UnityEngine.SceneManagement;
 
 public class GameManager :MonoBehaviour {
 
-    //存储所有UI物体名------下一版本将战斗界面独立到另一个Scene，DontDestroyOnLoad()
-    public const string LOGIN = "Login";
-    public const string MAIN = "Main";
-    public const string OPTION = "Option";
-    public const string SHOP = "Shop";
-    public const string DNA = "DNA";
-    public const string VIRUSSELECT = "VirusSelect";
-    public const string CAMPAIGN = "Campaign";
-    public const string CAMPAIGNRESULT = "CampaignResult";
-    public const string BATTLE = "Battle";
-	//public const string CASINO = "Casino";
-	public const string PPURL = "https://sites.google.com/view/dream-road/";
+    public static GameManager instance;
+
+    public string SCENCE_LOGIN = "Login";
+    public string SCENCE_MAIN = "Main";
+    public string SCENCE_MATCH = "Match";
+
+    public GameObject FadeObj;
+    float fadeSpeed = .02f;
+
+    //存储所有UI物体名
+    public const string LOGIN_LOGIN = "Login";
+
+    public const string MAIN_MAIN = "Main";
+    public const string MAIN_OPTION = "Option";
+    public const string MAIN_SHOP = "Shop";
+
+    public const string MATCH_TIPS = "Tips";
+    public const string MATCH_PAUSE = "Pause";
+    public const string MATCH_CONCLUDE = "Conclude";
+    public const string MATCH_PURCHASEINMATCH = "PurchaseInMatch";
+
+    //public const string CASINO = "Casino";
+    public const string PPURL = "https://sites.google.com/view/dream-road/";
 
     //public static CurrLanguage;       //用户语言类型
     public static User user;            //用户数据
@@ -26,14 +37,135 @@ public class GameManager :MonoBehaviour {
 
     //public static GameObject Battle;
     //public static Battle_C BC;
-	public static int StandardWidth = 1920;
-	public static int StandardHeight = 1080;
+	public static int StandardWidth = 1080;
+	public static int StandardHeight = 1920;
+
+    private AsyncOperation async;
+    private string currentScene;
 
     void Awake () {
-        Debug.Log("GameManager.start");
+        Debug.Log("GameManager.Awake");
 
         Debug.Log("SystemLanguage = " + Application.systemLanguage.ToString());
 
+        // Only 1 Game Manager can exist at a time
+        if (instance == null)
+        {
+            DontDestroyOnLoad(gameObject);
+            instance = GetComponent<GameManager>();
+            SceneManager.sceneLoaded += OnLevelFinishedLoading;
+            
+            //读取数据表
+            DataManager.ReadDatas();
+
+            //新建需要使用的类
+            user = new User();
+
+            /*
+            //读设置
+            if (PlayerPrefs.HasKey("IsSaved"))
+            {
+                //读档
+                Debug.Log("Loading Option....");
+                //PlayerPrefs.DeleteAll();
+                AudioManager.BgVolume = PlayerPrefs.GetFloat("MusicVolume");
+                AudioManager.IsSoundOn = bool.Parse(PlayerPrefs.GetString("IsSoundOn"));
+                LocalizationEx.LoadLanguage();
+
+                Casino.Rank = int.Parse(PlayerPrefs.GetString("Rank"));
+
+                Debug.Log("Load Option Complete");
+            }
+            else
+            {
+                //存储设置
+                Debug.Log("Saving Option....");
+
+                PlayerPrefs.SetString("IsSaved", "Yes");
+                PlayerPrefs.SetFloat("MusicVolume", AudioManager.BgVolume);
+                PlayerPrefs.SetString("IsSoundOn", AudioManager.IsSoundOn.ToString());
+                LocalizationEx.SaveLanguage(LanguageChange.init);
+
+                PlayerPrefs.SetString("Rank", Casino.Rank.ToString());
+
+                Debug.Log("Save Option Complete");
+            }
+            */
+
+            /*
+            //用户数据读档、存档
+            //定义存档路径
+            string dirpath = Application.persistentDataPath + "/Save";
+            //创建存档文件夹
+            IOHelper.CreateDirectory(dirpath);
+            //定义存档文件路径
+            string filename = dirpath + "/Zombie_GameData.sav";
+            FilePathName = filename;
+
+            //如果文件存在，读档
+            if (IOHelper.IsFileExists(FilePathName))
+            {
+                LoadData();
+            }
+            //如果文件不存在，新建档案
+            else
+            {
+                //新建数据，并保存数据
+                user.Init();
+                SaveData();
+            }
+            */
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
+        if (currentScene == SCENCE_LOGIN)
+        {
+            UIS.Clear();
+            UIS.Add(LOGIN_LOGIN, GameObject.Find(LOGIN_LOGIN));
+
+        }
+
+        if (currentScene == SCENCE_MAIN)
+        {
+            UIS.Clear();
+            UIS.Add(MAIN_MAIN, GameObject.Find(MAIN_MAIN));
+            UIS.Add(MAIN_OPTION, GameObject.Find(MAIN_OPTION));
+            UIS.Add(MAIN_SHOP, GameObject.Find(MAIN_SHOP));
+
+            //设置界面的初始位置
+
+            //隐藏所有界面
+            foreach (string ui in UIS.Keys)
+            {
+                //DontDestroyOnLoad(UIS[ui]);
+                UIS[ui].SetActive(false);
+            }
+
+            //初始化第一个界面
+            UIS[MAIN_MAIN].SetActive(true);
+
+        }
+
+        if (currentScene == SCENCE_MATCH)
+        {
+            UIS.Clear();
+            UIS.Add(MATCH_TIPS, GameObject.Find(MATCH_TIPS));
+            UIS.Add(MATCH_PAUSE, GameObject.Find(MATCH_PAUSE));
+            UIS.Add(MATCH_CONCLUDE, GameObject.Find(MATCH_CONCLUDE));
+            UIS.Add(MATCH_PURCHASEINMATCH, GameObject.Find(MATCH_PURCHASEINMATCH));
+
+            //隐藏所有界面
+            foreach (string ui in UIS.Keys)
+            {
+                //DontDestroyOnLoad(UIS[ui]);
+                UIS[ui].SetActive(false);
+            }
+        }
+
+        /*
         //读取数据表
         DataManager.ReadDatas();
 
@@ -126,17 +258,19 @@ public class GameManager :MonoBehaviour {
         //初始化第一个界面
         UIS[LOGIN].SetActive(true);
         */
+
     }
 
     private void Start()
     {
+        
 		UIRoot root = GameObject.FindObjectOfType<UIRoot> ();
 		if (root != null) {
 			float s = (float)root.activeHeight / Screen.height;
 			StandardHeight = Mathf.CeilToInt (Screen.height * s);
-			StandardWidth = Mathf.CeilToInt (Screen.width * s);
-		}
-
+            StandardWidth = Mathf.CeilToInt (Screen.width * s);
+        }
+        /*
         //隐藏所有界面
         foreach (string ui in UIS.Keys)
         {
@@ -146,7 +280,8 @@ public class GameManager :MonoBehaviour {
         //初始化第一个界面
         //UIS[LOGIN].SetActive(true);
         Formula.UI_IsVisible(UIS[LOGIN], true);
-        UIS[LOGIN].GetComponent<Login_C>().enter();
+        UIS[LOGIN].GetComponent<Login>().enter();
+        */
     }
 
     /// <summary>
@@ -156,13 +291,14 @@ public class GameManager :MonoBehaviour {
     /// <param name="desUI"></param>
     public static void ChangePanel(GameObject oriUI,GameObject desUI,int param1)
     {
+        /*
         //desUI.SetActive(true);
         Formula.UI_IsVisible(desUI,true);
 
         //预加载数据
         if (desUI == UIS[MAIN])
         {
-            GameObject.Find(MAIN).GetComponent<Main_C>().Enter();
+            GameObject.Find(MAIN).GetComponent<Main>().Enter();
         }
 
         if (desUI == UIS[CAMPAIGN])
@@ -196,11 +332,11 @@ public class GameManager :MonoBehaviour {
             {
                 //胜利
                 case 1:
-                    GameObject.Find(CAMPAIGNRESULT).GetComponent<CampaignResult_C>().Enter(true);
+                    GameObject.Find(CAMPAIGNRESULT).GetComponent<Conclude>().Enter(true);
                     break;
                 //失败
                 case 0:
-                    GameObject.Find(CAMPAIGNRESULT).GetComponent<CampaignResult_C>().Enter(false);
+                    GameObject.Find(CAMPAIGNRESULT).GetComponent<Conclude>().Enter(false);
                     break;
             }
         }
@@ -209,19 +345,96 @@ public class GameManager :MonoBehaviour {
 		{
 			GameObject.Find(CASINO).GetComponent<Casino>().Enter();
 		}*/
-
+        /*
         if (oriUI)
         {
            //oriUI.SetActive(false);
            Formula.UI_IsVisible(oriUI, false);
         }
-
+        */
     }
 
-    
+    // Get the current scene name
+    public string CurrentSceneName
+    {
+        get
+        {
+            return currentScene;
+        }
+    }
+
+    private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
+    {
+        currentScene = scene.name;
+        instance.StartCoroutine(FadeIn());
+    }
+
+    // Load a scene with a specified string name
+    public void LoadScene(string sceneName)
+    {
+        //SceneManager.LoadScene(sceneName);
+        instance.StartCoroutine(Load(sceneName));
+        instance.StartCoroutine(FadeOut());
+    }
+
+    // Begin loading a scene with a specified string asynchronously
+    IEnumerator Load(string sceneName)
+    {
+        async = SceneManager.LoadSceneAsync(sceneName);
+        async.allowSceneActivation = false;
+        yield return async;
+    }
+
+    //Iterate the fader transparency to 100%
+    IEnumerator FadeOut()
+    {
+        Debug.Log("fade out,遮罩变浓");
+        //GameObject fade = Instantiate(FadeObj);
+        //NGUITools.AddChild(GameObject.Find("UI Root"), fade);
+        FadeObj.transform.GetChild(0).GetComponent<UISprite>().width = (int)GameObject.Find("UI Root").GetComponent<UIPanel>().GetViewSize().x;
+        FadeObj.transform.GetChild(0).GetComponent<UISprite>().height = (int)GameObject.Find("UI Root").GetComponent<UIPanel>().GetViewSize().y;
+        GameObject fade = NGUITools.AddChild(GameObject.Find("UI Root"), FadeObj);
+        fade.SetActive(true);
+        fade.transform.GetChild(0).GetComponent<UISprite>().alpha = 0;
+        while (fade.transform.GetChild(0).GetComponent<UISprite>().alpha < 1)
+        {
+            Debug.Log("fade out....");
+            fade.transform.GetChild(0).GetComponent<UISprite>().alpha += .04f;
+            yield return new WaitForSeconds(fadeSpeed);
+        }
+        ActivateScene(); //Activate the scene when the fade ends
+        
+    }
+
+    // Iterate the fader transparency to 0%
+    IEnumerator FadeIn()
+    {
+        Debug.Log("fade in,遮罩变淡");
+        //GameObject fade = Instantiate(FadeObj);
+        //NGUITools.AddChild(GameObject.Find("UI Root"), fade);
+        FadeObj.transform.GetChild(0).GetComponent<UISprite>().width = (int)GameObject.Find("UI Root").GetComponent<UIPanel>().GetViewSize().x;
+        FadeObj.transform.GetChild(0).GetComponent<UISprite>().height = (int)GameObject.Find("UI Root").GetComponent<UIPanel>().GetViewSize().y;
+        GameObject fade = NGUITools.AddChild(GameObject.Find("UI Root"), FadeObj);
+        fade.SetActive(true);
+        fade.transform.GetChild(0).GetComponent<UISprite>().alpha = 1;
+        while (fade.transform.GetChild(0).GetComponent<UISprite>().alpha > 0)
+        {
+            Debug.Log("fade in....");
+            fade.transform.GetChild(0).GetComponent<UISprite>().alpha -= .04f;
+            yield return new WaitForSeconds(fadeSpeed);
+        }
+        //fade.SetActive(false);
+        Destroy(fade);
+    }
+
+    // Allows the scene to change once it is loaded
+    public void ActivateScene()
+    {
+        async.allowSceneActivation = true;
+    }
 
     //界面转入的表现方法
-	
+
     public static void SaveData()
     {
         //保存数据

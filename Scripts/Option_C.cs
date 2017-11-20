@@ -53,7 +53,7 @@ public class Option_C : MonoBehaviour {
 
         //处理存储音量
 
-        GameManager.ChangePanel(GameManager.UIS[GameManager.OPTION], GameManager.UIS[GameManager.MAIN], 0);
+        //GameManager.ChangePanel(GameManager.UIS[GameManager.OPTION], GameManager.UIS[GameManager.MAIN], 0);
     }
 
     public void LanguageRight_Click(GameObject b)

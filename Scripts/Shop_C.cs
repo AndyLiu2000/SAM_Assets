@@ -75,6 +75,6 @@ public class Shop_C : MonoBehaviour {
     public void Shop_BackBtn_Click(GameObject b)
     {
         Debug.Log("BackBtn_Click");
-        GameManager.ChangePanel(GameManager.UIS[GameManager.SHOP], GameManager.UIS[GameManager.MAIN], 0);
+        //GameManager.ChangePanel(GameManager.UIS[GameManager.SHOP], GameManager.UIS[GameManager.MAIN], 0);
     }
 }
