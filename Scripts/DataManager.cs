@@ -22,15 +22,15 @@ public class DataManager : MonoBehaviour {
     public static void ReadDatas()
     {
 
-        IAP_Item = (Resources.Load<Object>("Datas/" + assetNames[3]) as IAP).Item;
+        IAP_Item = (Resources.Load<Object>("Datas/" + assetNames[0]) as IAP).Item;
 
-        Language_Localization = (Resources.Load<Object>("Datas/" + assetNames[5]) as Language).Localization;
+        Language_Localization = (Resources.Load<Object>("Datas/" + assetNames[1]) as Language).Localization;
 
-        Loot_Package = (Resources.Load<Object>("Datas/" + assetNames[6]) as Loot).Package;
+        Loot_Package = (Resources.Load<Object>("Datas/" + assetNames[2]) as Loot).Package;
 
-        Mission_Parameter = (Resources.Load<Object>("Datas/" + assetNames[7]) as Mission).Parameter;
+        Mission_Parameter = (Resources.Load<Object>("Datas/" + assetNames[3]) as Mission).Parameter;
 
-        Unlock_UnlockMission = (Resources.Load<Object>("Datas/" + assetNames[10]) as Unlock).UnlockMission;
+        Unlock_UnlockMission = (Resources.Load<Object>("Datas/" + assetNames[4]) as Unlock).UnlockMission;
     }
 
 }

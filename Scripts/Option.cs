@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Option_C : MonoBehaviour {
+public class Option : MonoBehaviour {
 
     public UILabel LabelOption;
     public UILabel LabelLanguageName;
@@ -31,12 +31,14 @@ public class Option_C : MonoBehaviour {
 
     public void Enter()
     {
+        /*
         musicBarSlider.value = AudioManager.BgVolume;
         soundToggle.value = AudioManager.IsSoundOn;
 
         LabelOption.text = LocalizationEx.LoadLanguageTextName("Option");
         LabelLanguageName.text = LocalizationEx.LoadLanguageTextName("LanguageName");
         LabelLanguage.text = LocalizationEx.LoadLanguageTextName("Language");
+        */
     }
 
 	public void UpdateMusic(GameObject b){
@@ -53,7 +55,7 @@ public class Option_C : MonoBehaviour {
 
         //处理存储音量
 
-        //GameManager.ChangePanel(GameManager.UIS[GameManager.OPTION], GameManager.UIS[GameManager.MAIN], 0);
+        GameManager.ChangePanel(GameManager.UIS[GameManager.MAIN_OPTION], GameManager.UIS[GameManager.MAIN_MAIN], 0);
     }
 
     public void LanguageRight_Click(GameObject b)

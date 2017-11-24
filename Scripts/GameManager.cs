@@ -22,6 +22,7 @@ public class GameManager :MonoBehaviour {
     public const string MAIN_OPTION = "Option";
     public const string MAIN_SHOP = "Shop";
 
+    public const string MATCH_Match = "Match";
     public const string MATCH_TIPS = "Tips";
     public const string MATCH_PAUSE = "Pause";
     public const string MATCH_CONCLUDE = "Conclude";
@@ -119,50 +120,6 @@ public class GameManager :MonoBehaviour {
         else
         {
             Destroy(gameObject);
-        }
-
-        if (currentScene == SCENCE_LOGIN)
-        {
-            UIS.Clear();
-            UIS.Add(LOGIN_LOGIN, GameObject.Find(LOGIN_LOGIN));
-
-        }
-
-        if (currentScene == SCENCE_MAIN)
-        {
-            UIS.Clear();
-            UIS.Add(MAIN_MAIN, GameObject.Find(MAIN_MAIN));
-            UIS.Add(MAIN_OPTION, GameObject.Find(MAIN_OPTION));
-            UIS.Add(MAIN_SHOP, GameObject.Find(MAIN_SHOP));
-
-            //设置界面的初始位置
-
-            //隐藏所有界面
-            foreach (string ui in UIS.Keys)
-            {
-                //DontDestroyOnLoad(UIS[ui]);
-                UIS[ui].SetActive(false);
-            }
-
-            //初始化第一个界面
-            UIS[MAIN_MAIN].SetActive(true);
-
-        }
-
-        if (currentScene == SCENCE_MATCH)
-        {
-            UIS.Clear();
-            UIS.Add(MATCH_TIPS, GameObject.Find(MATCH_TIPS));
-            UIS.Add(MATCH_PAUSE, GameObject.Find(MATCH_PAUSE));
-            UIS.Add(MATCH_CONCLUDE, GameObject.Find(MATCH_CONCLUDE));
-            UIS.Add(MATCH_PURCHASEINMATCH, GameObject.Find(MATCH_PURCHASEINMATCH));
-
-            //隐藏所有界面
-            foreach (string ui in UIS.Keys)
-            {
-                //DontDestroyOnLoad(UIS[ui]);
-                UIS[ui].SetActive(false);
-            }
         }
 
         /*
@@ -291,67 +248,32 @@ public class GameManager :MonoBehaviour {
     /// <param name="desUI"></param>
     public static void ChangePanel(GameObject oriUI,GameObject desUI,int param1)
     {
-        /*
-        //desUI.SetActive(true);
-        Formula.UI_IsVisible(desUI,true);
+        
+        desUI.SetActive(true);
+        //Formula.UI_IsVisible(desUI,true);
 
         //预加载数据
-        if (desUI == UIS[MAIN])
+        if (desUI == UIS[MAIN_MAIN])
         {
-            GameObject.Find(MAIN).GetComponent<Main>().Enter();
+            GameObject.Find(MAIN_MAIN).GetComponent<Main>().Enter();
         }
 
-        if (desUI == UIS[CAMPAIGN])
+        if (desUI == UIS[MAIN_SHOP])
         {
-            GameObject.Find(CAMPAIGN).GetComponent<Campaign_C>().Enter(param1);
+            GameObject.Find(MAIN_SHOP).GetComponent<Shop>().Enter();
         }
 
-        if (desUI == UIS[VIRUSSELECT])
+        if (desUI == UIS[MAIN_OPTION])
         {
-            GameObject.Find(VIRUSSELECT).GetComponent<VirusSelect>().Enter();
+            GameObject.Find(MAIN_OPTION).GetComponent<Option>().Enter();
         }
-
-        if (desUI == UIS[DNA])
-        {
-            GameObject.Find(DNA).GetComponent<DNA_C>().Enter();
-        }
-
-        if (desUI == UIS[SHOP])
-        {
-            GameObject.Find(SHOP).GetComponent<Shop_C>().Enter();
-        }
-
-        if (desUI == UIS[OPTION])
-        {
-            GameObject.Find(OPTION).GetComponent<Option_C>().Enter();
-        }
-
-        if(desUI == UIS[CAMPAIGNRESULT])
-        {
-            switch (param1)
-            {
-                //胜利
-                case 1:
-                    GameObject.Find(CAMPAIGNRESULT).GetComponent<Conclude>().Enter(true);
-                    break;
-                //失败
-                case 0:
-                    GameObject.Find(CAMPAIGNRESULT).GetComponent<Conclude>().Enter(false);
-                    break;
-            }
-        }
-
-		/*if (desUI == UIS[CASINO])
-		{
-			GameObject.Find(CASINO).GetComponent<Casino>().Enter();
-		}*/
-        /*
+        
         if (oriUI)
         {
-           //oriUI.SetActive(false);
-           Formula.UI_IsVisible(oriUI, false);
+           oriUI.SetActive(false);
+           //Formula.UI_IsVisible(oriUI, false);
         }
-        */
+        
     }
 
     // Get the current scene name
@@ -365,7 +287,62 @@ public class GameManager :MonoBehaviour {
 
     private void OnLevelFinishedLoading(Scene scene, LoadSceneMode mode)
     {
+        Debug.Log("OnLevelFinishedLoading");
         currentScene = scene.name;
+
+        Debug.Log("currentScene =" + currentScene);
+
+        if (currentScene == SCENCE_LOGIN)
+        {
+            Debug.Log("Init Login UI");
+            UIS.Clear();
+            UIS.Add(LOGIN_LOGIN, GameObject.Find(LOGIN_LOGIN));
+
+        }
+
+        if (currentScene == SCENCE_MAIN)
+        {
+            Debug.Log("Init Main UI");
+            UIS.Clear();
+            UIS.Add(MAIN_MAIN, GameObject.Find(MAIN_MAIN));
+            UIS.Add(MAIN_OPTION, GameObject.Find(MAIN_OPTION));
+            UIS.Add(MAIN_SHOP, GameObject.Find(MAIN_SHOP));
+
+            //设置界面的初始位置
+
+            //隐藏所有界面
+            foreach (string ui in UIS.Keys)
+            {
+                UIS[ui].SetActive(false);
+            }
+
+            //初始化第一个界面
+            UIS[MAIN_MAIN].SetActive(true);
+
+        }
+
+        if (currentScene == SCENCE_MATCH)
+        {
+            Debug.Log("Init Match UI");
+            UIS.Clear();
+            UIS.Add(MATCH_Match, GameObject.Find(MATCH_Match));
+            UIS.Add(MATCH_TIPS, GameObject.Find(MATCH_TIPS));
+            UIS.Add(MATCH_PAUSE, GameObject.Find(MATCH_PAUSE));
+            UIS.Add(MATCH_CONCLUDE, GameObject.Find(MATCH_CONCLUDE));
+            UIS.Add(MATCH_PURCHASEINMATCH, GameObject.Find(MATCH_PURCHASEINMATCH));
+
+            //隐藏所有界面
+            foreach (string ui in UIS.Keys)
+            {
+                //DontDestroyOnLoad(UIS[ui]);
+                UIS[ui].SetActive(false);
+            }
+
+            //初始化第一个界面
+            UIS[MATCH_Match].SetActive(true);
+
+        }
+
         instance.StartCoroutine(FadeIn());
     }
 
@@ -398,7 +375,7 @@ public class GameManager :MonoBehaviour {
         fade.transform.GetChild(0).GetComponent<UISprite>().alpha = 0;
         while (fade.transform.GetChild(0).GetComponent<UISprite>().alpha < 1)
         {
-            Debug.Log("fade out....");
+            //Debug.Log("fade out....");
             fade.transform.GetChild(0).GetComponent<UISprite>().alpha += .04f;
             yield return new WaitForSeconds(fadeSpeed);
         }
@@ -419,7 +396,7 @@ public class GameManager :MonoBehaviour {
         fade.transform.GetChild(0).GetComponent<UISprite>().alpha = 1;
         while (fade.transform.GetChild(0).GetComponent<UISprite>().alpha > 0)
         {
-            Debug.Log("fade in....");
+            //Debug.Log("fade in....");
             fade.transform.GetChild(0).GetComponent<UISprite>().alpha -= .04f;
             yield return new WaitForSeconds(fadeSpeed);
         }

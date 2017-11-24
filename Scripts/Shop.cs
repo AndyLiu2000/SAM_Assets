@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
-public class DNA_C : MonoBehaviour {
+public class Shop : MonoBehaviour {
     
     public GameObject prefabs_Cell;
     public UILabel LabelGold;
@@ -179,7 +179,7 @@ public class DNA_C : MonoBehaviour {
     public void DNA_BackBtn_Click(GameObject button)
     {
         Debug.Log("BackBtn_Click");
-        //GameManager.ChangePanel(GameManager.UIS[GameManager.DNA], GameManager.UIS[GameManager.MAIN],0);
+        GameManager.ChangePanel(GameManager.UIS[GameManager.MAIN_SHOP], GameManager.UIS[GameManager.MAIN_MAIN],0);
     }
 
     //点击按钮切换到这种研究项目，移除原来的加载cell
