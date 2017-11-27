@@ -9,12 +9,12 @@ public class Shop_C : MonoBehaviour {
     public GameObject prefabs_Cell;
     public GameObject Shop_BackBtn;
 
-    ObjectPool<GameObject, IAP_Sheet> OP;
+    ObjectPoolManager<GameObject, IAP_Sheet> OP;
 
     // Use this for initialization
     void Start () {
         UIEventListener.Get(Shop_BackBtn).onClick = Shop_BackBtn_Click;
-        OP = new ObjectPool<GameObject, IAP_Sheet>(10, ResetIAPData, InitIAPData);
+        OP = new ObjectPoolManager<GameObject, IAP_Sheet>(10, ResetIAPData, InitIAPData);
 
 		ShopGrid.GetComponent<UIGrid> ().cellWidth = (int)(ShopScroll.GetComponent<UIPanel> ().GetViewSize().x / 5);
 		ShopGrid.GetComponent<UIGrid> ().cellHeight = (int)(ShopScroll.GetComponent<UIPanel> ().GetViewSize().y - 20);

@@ -28,6 +28,15 @@ public class GameManager :MonoBehaviour {
     public const string MATCH_CONCLUDE = "Conclude";
     public const string MATCH_PURCHASEINMATCH = "PurchaseInMatch";
 
+    //目录
+    //public const string ResourcesPrefab = "Prefabs/";
+    //文件名称
+    public const string Tile = "Tile";
+
+    //动画参数名称
+    public const string Pressed = "Pressed";
+    public const string Exit = "Exit";
+
     //public const string CASINO = "Casino";
     public const string PPURL = "https://sites.google.com/view/dream-road/";
 

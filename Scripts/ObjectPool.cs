@@ -1,54 +1,58 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
-public class ObjectPool<T1,T2> where T1:class, new()
-{
-    public List<T1> ObjectList;
-    public List<T2> ObjectSheet;
-    public Action<T1, List<T2>, int, int> ResetAction;
-    public Action<T1, List<T2>, int, int> InitAction;
+public class ObjectPool : MonoBehaviour {
 
-    private int nextAvailableIndex = 0;
+	//单例
+	public static ObjectPool instance;
+	//对象池
+	private Dictionary<string,List<GameObject>> pool;
 
-    public ObjectPool(int initialBufferSize, Action<T1, List<T2>, int,int> resetAction = null, Action<T1, List<T2>, int,int> initAction = null)
-    {
-        ObjectList = new List<T1>(initialBufferSize);
-        ResetAction = resetAction;
-        InitAction = initAction;
-    }
+	void Awake()
+	{
+		instance = this;
+		pool = new Dictionary<string, List<GameObject>> ();
+	}
 
-    public T1 New(T1 go, int i1,int i2)
-    {
-        if (nextAvailableIndex < ObjectList.Count)
-        {
-            // an allocated object is already available; just reset it
-            T1 t = ObjectList[nextAvailableIndex];
-            //(t as GameObject).SetActive(true);
-            Formula.Btn_IsVisible(t as GameObject, true);
-            nextAvailableIndex++;
+	public void SetGameObject(GameObject current)
+	{
+		//设置成非激活状态
+		current.SetActive (false);
+		//清空父对象
+//		current.transform.parent = null;
+		//是否有该类型的对象池
+		if (pool.ContainsKey (current.tag)) {
+			//添加到对象池
+			pool [current.tag].Add (current);
+		} else {
+			pool [current.tag] = new List<GameObject> (){ current };
+		}
+	}
 
-            if (ResetAction != null)
-                ResetAction(t, ObjectSheet, i1,i2);
+	public GameObject GetGameObject(string objName,Transform parent = null)
+	{
+		GameObject current;
+		//包含此对象池,且有对象
+		if (pool.ContainsKey (objName) && pool[objName].Count > 0) {
+			//获取对象
+			current = pool [objName] [0];
+		} else {
+			//加载预设体
+			GameObject prefab = Resources.Load<GameObject> (objName);
+            //生成
+            //current = Instantiate(prefab) as GameObject;
+            current = NGUITools.AddChild(parent.gameObject,prefab);
+		}
+		//设置激活状态
+		current.SetActive (true);
+		//设置父物体
+		current.transform.parent = parent;
 
-            return t;
-        }
-        else
-        {
-            // no allocated object is available
-            nextAvailableIndex++;
+		current.transform.DOScale (Vector3.one, 0.1f);
 
-            if (InitAction != null)
-                InitAction(go, ObjectSheet, i1,i2);
-
-            return go;
-        }
-    }
-
-    public void ResetAll()
-    {
-        //重置索引
-        nextAvailableIndex = 0;
-    }
+		//返回
+		return current;
+	}
 }

@@ -15,7 +15,7 @@ public class Shop : MonoBehaviour {
     public GameObject DNA_HumanBtn;
     public GameObject DNA_ZombieBtn;
 
-    ObjectPool<GameObject, DNAUp_Sheet> OP;
+    ObjectPoolManager<GameObject, DNAUp_Sheet> OP;
     int prefabscellChildrenNum = 0;
 
     // Use this for initialization
@@ -25,7 +25,7 @@ public class Shop : MonoBehaviour {
         UIEventListener.Get(DNA_HumanBtn).onClick = DNA_HumanBtn_Click;
         UIEventListener.Get(DNA_ZombieBtn).onClick = DNA_ZombieBtn_Click;
 
-        OP = new ObjectPool<GameObject,DNAUp_Sheet>(10,ResetDNAData,InitDNAData);
+        OP = new ObjectPoolManager<GameObject,DNAUp_Sheet>(10,ResetDNAData,InitDNAData);
 
         prefabscellChildrenNum = prefabs_Cell.GetComponentsInChildren<Transform>().Length;
 
