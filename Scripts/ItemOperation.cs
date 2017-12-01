@@ -8,16 +8,22 @@ using DG.Tweening;
 public class ItemOperation : MonoBehaviour {
 
 	private Tile tile;
+    private BoardManager boardManager;
 
-	void Awake()
+    void Awake()
 	{
 		tile = GetComponent<Tile> ();
         UIEventListener.Get(gameObject).onDragStart = OnDown;
         UIEventListener.Get(gameObject).onDragEnd = OnUp;
     }
 
-	//按下的鼠标坐标
-	private Vector3 downPos;
+    void OnEnable()
+    {
+        boardManager = BoardManager.instance;
+    }
+
+    //按下的鼠标坐标
+    private Vector3 downPos;
 	//抬起的鼠标坐标
 	private Vector3 upPos;
 
@@ -77,8 +83,19 @@ public class ItemOperation : MonoBehaviour {
 		//相互移动
 		target.GetComponent<ItemOperation> ().ItemMove (tile.tileRow, tile.tileColumn, transform.position);
 		ItemMove (targetRow, targetColumn, target.transform.position);
-		//还原标志位
-		bool reduction = false;
+
+        //两个特殊效果互换
+        if (target.sprite.spriteName.Length > 2 && myItem.sprite.spriteName.Length > 2)
+        {
+            Debug.Log("SE");
+            List<Tile> seList = new List<Tile>();
+            seList.Add(target);
+            seList.Add(myItem);
+            boardManager.Boom(seList);
+            yield break;
+        }
+        //还原标志位
+        bool reduction = false;
 		//消除处理
 		tile.CheckAdjacentMatch();
 		if (BoardManager.instance.MatchList.Count == 0) {

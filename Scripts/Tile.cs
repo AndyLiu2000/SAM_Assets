@@ -33,12 +33,13 @@ public class Tile : MonoBehaviour {
 	public void CheckAdjacentMatch()
 	{
         Debug.Log("CheckAdjacentMatch");
+        //每个tile检查自己是否能否作为消除中心
 		boardManager.SameTilesList.Clear ();
 		boardManager.MatchList.Clear ();
 
 		boardManager.randomColor = Color.white;
-			//new Color (Random.Range (0.1f, 1f), Random.Range (0.1f, 1f), Random.Range (0.1f, 1f), 1);
-		boardManager.FillSameTilesList (this);
-		boardManager.FillMatchList (this);
+        //new Color (Random.Range (0.1f, 1f), Random.Range (0.1f, 1f), Random.Range (0.1f, 1f), 1);
+        boardManager.FillSameTilesList(this);
+        boardManager.FillMatchList (this);
 	}
 }

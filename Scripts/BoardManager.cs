@@ -3,12 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum TileDurection
+public enum TileDirection
 {
     Up,
     Down,
     Left,
     Right
+}
+
+public enum MatchType
+{
+    Three_Normal,
+    Four_Horizental,
+    Four_Vertical,
+    Five_Bomb,
+    Five_All
 }
 
 public class BoardManager : MonoBehaviour {
@@ -17,8 +26,9 @@ public class BoardManager : MonoBehaviour {
 	public static BoardManager instance;
 	//随机图案
 	public UISprite[] randomUISprite;
-	//行列
-	public int BoardRow = 9;
+    public string[] randomGemName = new string[] { "10", "20", "30", "40", "50" };
+    //行列
+    public int BoardRow = 9;
 	public int BoardColumn = 9;
 	//偏移量
 	public Vector2 offset = new Vector2(0,0);
@@ -30,8 +40,9 @@ public class BoardManager : MonoBehaviour {
 	public List<Tile> SameTilesList;
 	//要消除的Item列表
 	public List<Tile> MatchList;
-	//随机颜色
-	public Color randomColor;
+
+    //随机颜色
+    public Color randomColor;
 	//正在操作
 	public bool isOperation = false;
 	//是否正在执行AllBoom
@@ -42,6 +53,8 @@ public class BoardManager : MonoBehaviour {
 
     public GameObject TilePrefabs;
 
+    private MatchType mt = MatchType.Three_Normal;
+
 	void Awake()
 	{
 		instance = this;
@@ -49,7 +62,7 @@ public class BoardManager : MonoBehaviour {
 		TilePos = new Vector3[BoardRow,BoardColumn];
 		SameTilesList = new List<Tile> ();
 		MatchList = new List<Tile> ();
-	}
+    }
 
     void Start()
     {
@@ -78,6 +91,9 @@ public class BoardManager : MonoBehaviour {
         UISprite[] previousBelow = new UISprite[BoardRow];
         UISprite previousLeft = null;
 
+        string[] previousBelowString = new string[BoardRow];
+        string previousLeftString = null;
+
         //生成ITEM
         for (int i = 0; i < BoardRow; i++) {
 			for (int j = 0; j < BoardColumn; j++) {
@@ -97,7 +113,7 @@ public class BoardManager : MonoBehaviour {
 				current.tileColumn = j;
 				//设置图案
 				//current.sprite = randomSprites[random];
-                List<UISprite> possibleCharacters = new List<UISprite>(); // 1
+                /*List<UISprite> possibleCharacters = new List<UISprite>(); // 1
                 possibleCharacters.AddRange(randomUISprite); // 2
 
                 possibleCharacters.Remove(previousBelow[j]); // 3  把自己下面的排除掉，保证不会重复
@@ -105,9 +121,52 @@ public class BoardManager : MonoBehaviour {
 
                 UISprite newSprite = possibleCharacters[Random.Range(0, possibleCharacters.Count)];//在剩下的不重复的选择项中随机一个
                 current.sprite.spriteName = newSprite.spriteName; // 3
+                */
+                List<string> possibleStrings = new List<string>(); // 1
+                possibleStrings.AddRange(randomGemName); // 2
 
-                previousBelow[j] = newSprite;
-                previousLeft = newSprite;
+                possibleStrings.Remove(previousBelowString[j]); // 3  把自己下面的排除掉，保证不会重复
+                possibleStrings.Remove(previousLeftString);//把自己左边的排除掉，保证不会重复
+
+                string newString = possibleStrings[Random.Range(0, possibleStrings.Count)];//在剩下的不重复的选择项中随机一个
+                current.sprite.spriteName = newString; // 3
+
+                //测试All组合
+                /*
+                if (i == 4 && (j == 2 || j == 3 || j == 5 || j == 6))
+                {
+                    current.sprite.spriteName = "10";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "10";
+                }*/
+
+                //测试双炸弹组合
+                /*
+                if (i == 4 && j == 4)
+                {
+                    current.sprite.spriteName = "10_30";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "10_30";
+                }
+                */
+                //测试双直线组合
+                if (i == 4 && j == 4)
+                {
+                    current.sprite.spriteName = "10_10";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "10_20";
+                }
+
+                //previousBelow[j] = newSprite;
+                //previousLeft = newSprite;
+                previousBelowString[j] = newString;
+                previousLeftString = newString;
                 //设置图片
                 //current.Img = randomSprites[random];
                 //保存到数组
@@ -122,7 +181,7 @@ public class BoardManager : MonoBehaviour {
 	{
 		//有消除
 		bool hasMatch = false;
-		foreach (var tile in Tiles) {
+		foreach (Tile tile in Tiles) {
 			//指定位置的Item存在，且没有被检测过
 			if (tile && !tile.hasCheck) {
 				//检测周围的消除
@@ -149,21 +208,28 @@ public class BoardManager : MonoBehaviour {
 			return;
 		//添加到列表
 		SameTilesList.Add (current);
-		//上下左右的Item
-		Tile[] tempTileList = new Tile[]{
-			GetTileByDirection(current,TileDurection.Up),
-            GetTileByDirection(current,TileDurection.Down),
-            GetTileByDirection(current,TileDurection.Left),
-            GetTileByDirection(current,TileDurection.Right)};
+        //上下左右的Item
+        Tile[] tempTileList = new Tile[]{
+            GetTileByDirection(current,TileDirection.Up),
+            GetTileByDirection(current,TileDirection.Down),
+            GetTileByDirection(current,TileDirection.Left),
+            GetTileByDirection(current,TileDirection.Right)};
 
 		for (int i = 0; i < tempTileList.Length; i++) {
 			//如果Item不合法，跳过
 			if (tempTileList [i] == null)
 				continue;
+            /*
 			if (current.sprite.spriteName == tempTileList [i].sprite.spriteName) {
 				FillSameTilesList (tempTileList[i]);//迭代的方法，继续找相邻的相同元素
-			}
-		}
+			}*/
+            string currentStart = current.sprite.spriteName.Substring(0, 2);
+            string tempStart = tempTileList[i].sprite.spriteName.Substring(0, 2);
+            if (currentStart == tempStart)
+            {
+                FillSameTilesList(tempTileList[i]);//迭代的方法，继续找相邻的相同元素
+            }
+        }
 	}
 
 	/// <summary>
@@ -183,13 +249,14 @@ public class BoardManager : MonoBehaviour {
 
 			//如果在同一行
 			if (tile.tileRow == current.tileRow) {
-				//判断该点与Curren中间有无间隙
+				//判断该点与Current中间有无间隙
 				bool rowCanBoom  = CheckItemsInterval(true,current,tile);
 				if (rowCanBoom) {
 					//计数
 					rowCount++;
 					//添加到行临时列表
 					rowTempList.Add (tile);
+                    
 				}
 			}
 			//如果在同一列
@@ -201,7 +268,8 @@ public class BoardManager : MonoBehaviour {
 					columnCount++;
 					//添加到列临时列表
 					columnTempList.Add (tile);
-				}
+                    
+                }
 			}
 		}
 		//横向消除
@@ -222,6 +290,23 @@ public class BoardManager : MonoBehaviour {
 			//将临时列表中的Item全部放入BoomList
 			MatchList.AddRange (columnTempList);
 		}
+        if(rowCount == 4)
+        {
+            mt = MatchType.Four_Vertical;
+        }
+        if(columnCount == 4)
+        {
+            mt = MatchType.Four_Horizental;
+        }
+        if(rowCount == 3 && columnCount == 3)
+        {
+            mt = MatchType.Five_Bomb;
+        }
+        if(rowCount >= 5 || columnCount >= 5)
+        {
+            mt = MatchType.Five_All;
+        }
+
 		//如果没有消除对象，返回
 		if (MatchList.Count == 0)
 			return;
@@ -230,32 +315,120 @@ public class BoardManager : MonoBehaviour {
 		//转移到临时列表
 		tempBoomList.AddRange (MatchList);
 		//开启处理BoomList的协程
-		StartCoroutine (ManipulateBoomList (tempBoomList));
+		StartCoroutine (ManipulateBoomList (tempBoomList,current));
 	}
 	/// <summary>
 	/// 处理BoomList
 	/// </summary>
 	/// <returns>The boom list.</returns>
-	IEnumerator ManipulateBoomList(List<Tile> tempBoomList)
+	IEnumerator ManipulateBoomList(List<Tile> tempBoomList, Tile current)
 	{
-		foreach (var item in tempBoomList) {
-			item.hasCheck = true;
-			item.GetComponent<UISprite> ().alpha = 0;
-			//离开动画
-            
-			//item.GetComponent<AnimatedButton> ().Exit ();
-			//Boom声音
-			//AudioManager.instance.PlayMagicalAudio();
-			//将被消除的Item在全局列表中移除
-			Tiles [item.tileRow, item.tileColumn] = null;
-		}
-		//检测Item是否已经开发播放离开动画
-		//while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
-			//yield return 0;
-		//}
+        List<Tile> boomList = new List<Tile>();
+		foreach (Tile tile in tempBoomList) {
+			tile.hasCheck = true;
+			tile.GetComponent<UISprite> ().alpha = 0.5f;
 
-		//延迟0.2秒
-		yield return new WaitForSeconds (0.2f);
+            //离开动画
+
+            //item.GetComponent<AnimatedButton> ().Exit ();
+            //Boom声音
+            //AudioManager.instance.PlayMagicalAudio();
+            //将被消除的Item在全局列表中移除
+
+            //Tile的形态变化
+            if(tile == current && mt != MatchType.Three_Normal)
+            {
+                switch (mt)
+                {
+                    case MatchType.Four_Horizental:
+                        tile.GetComponent<UISprite>().alpha = 1;
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0,2) + "_10";
+                        break;
+                    case MatchType.Four_Vertical:
+                        tile.GetComponent<UISprite>().alpha = 1;
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + "_20";
+                        break;
+                    case MatchType.Five_Bomb:
+                        tile.GetComponent<UISprite>().alpha = 1;
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + "_30";
+                        break;
+                    case MatchType.Five_All:
+                        tile.GetComponent<UISprite>().alpha = 1;
+                        tile.sprite.spriteName = "All";
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                //特殊Tile的效果触发
+                if (tile.sprite.spriteName.Length > 2)
+                {
+                    boomList.Add(tile);
+                    string end = tile.sprite.spriteName.Substring(2, 3);
+                    switch (end)
+                    {
+                        case "_10":
+                            foreach (Tile rowTile in Tiles)
+                            {
+                                if (tile == null || rowTile == null) continue;
+                                if (rowTile.tileRow == tile.tileRow && rowTile.tileColumn != tile.tileColumn)
+                                {
+                                    boomList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
+                                }
+                            }
+                            break;
+                        case "_20":
+                            foreach (Tile columnTile in Tiles)
+                            {
+                                if (tile == null || columnTile == null) continue;
+                                if (columnTile.tileColumn == tile.tileColumn && columnTile.tileRow != tile.tileRow)
+                                {
+                                    boomList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
+                                }
+                            }
+                            break;
+                        case "_30":
+                            foreach (Tile nearTile in Tiles)
+                            {
+                                if (tile == null || nearTile == null) continue;
+                                int distance = Mathf.Abs(nearTile.tileColumn - tile.tileColumn) + Mathf.Abs(nearTile.tileRow - tile.tileRow);
+                                if (distance > 0 && distance <= 2)
+                                {
+                                    boomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    Tiles[tile.tileRow, tile.tileColumn] = null;
+                }
+            }
+        }
+
+        //如果是产生特殊效果，核心Tile要保留下来不消除
+        if(mt != MatchType.Three_Normal)
+        {
+            tempBoomList.Remove(current);
+        }
+        mt = MatchType.Three_Normal;
+        tempBoomList.AddRange(boomList);
+
+        yield return StartCoroutine(BoomMatch(boomList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        //延迟0.2秒
+        yield return new WaitForSeconds (0.2f);
 		//开启下落
 		yield return StartCoroutine (ItemsDrop ());
 		//延迟0.38秒
@@ -267,11 +440,98 @@ public class BoardManager : MonoBehaviour {
 		}
 	}
 
-	/// <summary>
-	/// Items下落
-	/// </summary>
-	/// <returns>The drop.</returns>
-	IEnumerator ItemsDrop()
+    IEnumerator BoomMatch(List<Tile> boomList)
+    {
+        foreach (Tile tile in boomList)
+        {
+            tile.hasCheck = true;
+            tile.GetComponent<UISprite>().alpha = 0.5f;
+            Tiles[tile.tileRow, tile.tileColumn] = null;
+        }
+        yield break;
+
+        //延迟0.2秒
+        yield return new WaitForSeconds(0.2f);
+    }
+
+    public void Boom(List<Tile> boomList)
+    {
+        //两个横竖效果
+        int linearCount = 0;
+        int bombCount = 0;
+        int allCount = 0;
+        foreach (Tile t in boomList)
+        {
+            if (t.sprite.spriteName.EndsWith("_10") || t.sprite.spriteName.EndsWith("_20"))
+            {
+                linearCount++;
+            }
+
+            if (t.sprite.spriteName.EndsWith("_30"))
+            {
+                bombCount++;
+            }
+
+            if(t.sprite.spriteName == "All")
+            {
+                allCount++;
+            }
+        }
+        if (linearCount == 2)
+        {
+            StartCoroutine(ManipulateBoomList(boomList, boomList[0]));
+            StartCoroutine(ManipulateBoomList(boomList, boomList[1]));
+            return;
+        }
+
+        if(bombCount == 2)
+        {
+            StartCoroutine(SuperBomb(boomList));
+            return;
+        }
+    }
+
+    IEnumerator SuperBomb(List<Tile> boomList)
+    {
+        List<Tile> superBoomList = new List<Tile>();
+        superBoomList.AddRange(boomList);
+        foreach (Tile nearTile in Tiles)
+        {
+            //if (nearTile == boomList[0] || nearTile == boomList[1]) continue;
+            float distance = Mathf.Abs(nearTile.tileColumn - (boomList[0].tileColumn + boomList[1].tileColumn) / 2.0f) + Mathf.Abs(nearTile.tileRow - (boomList[0].tileRow + boomList[1].tileRow) / 2.0f);
+            if (distance >= 1.5f && distance <= 3.5f)
+            {
+                superBoomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+            }
+        }
+        
+        yield return StartCoroutine(BoomMatch(superBoomList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        //延迟0.2秒
+        yield return new WaitForSeconds(0.2f);
+        //开启下落
+        yield return StartCoroutine(ItemsDrop());
+        //延迟0.38秒
+        yield return new WaitForSeconds(0.38f);
+
+        foreach (Tile item in superBoomList)
+        {
+            //回收Item
+            ObjectPool.instance.SetGameObject(item.gameObject);
+        }
+    }
+
+
+    /// <summary>
+    /// Items下落
+    /// </summary>
+    /// <returns>The drop.</returns>
+    IEnumerator ItemsDrop()
 	{
 		isOperation = true;
 		//逐列检测
@@ -337,14 +597,21 @@ public class BoardManager : MonoBehaviour {
 			for (int k = 0; k < count; k++) {
 				//获取Item组件
 				Tile currentItem = newItemQueue.Dequeue ().GetComponent<Tile>();
+                /*
 				//随机数
 				int random = Random.Range (0, randomUISprite.Length);
 				//修改脚本中的图片
 				currentItem.sprite.spriteName = randomUISprite [random].spriteName;
-				//修改真实图片
-				//currentItem.Img = randomSprites [random];
-				//获取要移动的行数
-				int r = BoardRow - count + k;
+                */
+                //随机数
+                int random = Random.Range(0, randomGemName.Length);
+                //修改脚本中的图片
+                currentItem.sprite.spriteName = randomGemName[random];
+
+                //修改真实图片
+                //currentItem.Img = randomSprites [random];
+                //获取要移动的行数
+                int r = BoardRow - count + k;
 				//移动
 				currentItem.GetComponent<ItemOperation> ().ItemMove (r,i,TilePos[r,i]);
 			}
@@ -374,14 +641,22 @@ public class BoardManager : MonoBehaviour {
 			}
 			//遍历中间的Item
 			for (int i = beginIndex + 1; i < endIndex; i++) {
-				//异常处理（中间未生成，标识为不合法）
+				//异常处理（中间之前已被消除，此时未生成，标识为不合法）
 				if (Tiles [begin.tileRow, i] == null)
 					return false;
+                /*
 				//如果中间有间隙（有图案不一致的）
 				if (Tiles [begin.tileRow, i].sprite.spriteName != spr.spriteName) {
 					return false;
-				}
-			}
+				}*/
+                string currentStart = spr.spriteName.Substring(0, 2);
+                string tempStart = Tiles[begin.tileRow, i].sprite.spriteName.Substring(0, 2);
+                //如果中间有间隙（有图案不一致的）
+                if (currentStart != tempStart)
+                {
+                    return false;
+                }
+            }
 			return true;
 		} else {
 			//起点终点行号
@@ -394,11 +669,19 @@ public class BoardManager : MonoBehaviour {
 			}
 			//遍历中间的Item
 			for (int i = beginIndex + 1; i < endIndex; i++) {
+                /*
 				//如果中间有间隙（有图案不一致的）
 				if (Tiles [i, begin.tileColumn].sprite.spriteName != spr.spriteName) {
 					return false;
-				}
-			}
+				}*/
+                string currentStart = spr.spriteName.Substring(0, 2);
+                string tempStart = Tiles[i, begin.tileColumn].sprite.spriteName.Substring(0, 2);
+                //如果中间有间隙（有图案不一致的）
+                if (currentStart != tempStart)
+                {
+                    return false;
+                }
+            }
 			return true;
 		}
 	}
@@ -409,25 +692,25 @@ public class BoardManager : MonoBehaviour {
     /// <param name="current"></param>
     /// <param name="td"></param>
     /// <returns></returns>
-	private Tile GetTileByDirection(Tile current,TileDurection td)
+	private Tile GetTileByDirection(Tile current,TileDirection td)
 	{
         int row = -1;
         int column = -1;
         switch (td)
         {
-            case TileDurection.Up:
+            case TileDirection.Up:
                 row = current.tileRow + 1;
                 column = current.tileColumn;
                 break;
-            case TileDurection.Down:
+            case TileDirection.Down:
                 row = current.tileRow - 1;
                 column = current.tileColumn;
                 break;
-            case TileDurection.Left:
+            case TileDirection.Left:
                 row = current.tileRow;
                 column = current.tileColumn - 1;
                 break;
-            case TileDurection.Right:
+            case TileDirection.Right:
                 row = current.tileRow;
                 column = current.tileColumn + 1;
                 break;
