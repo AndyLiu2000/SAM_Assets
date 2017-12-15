@@ -85,7 +85,9 @@ public class ItemOperation : MonoBehaviour {
 		ItemMove (targetRow, targetColumn, target.transform.position);
 
         //两个特殊效果互换
-        if (target.sprite.spriteName.Length > 2 && myItem.sprite.spriteName.Length > 2)
+        if ((target.sprite.spriteName.Length > 2 && myItem.sprite.spriteName.Length > 2) 
+            || target.sprite.spriteName == "All"
+            || myItem.sprite.spriteName == "All")
         {
             Debug.Log("SE");
             List<Tile> seList = new List<Tile>();

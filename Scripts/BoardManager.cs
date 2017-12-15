@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public enum TileDirection
 {
@@ -68,6 +67,7 @@ public class BoardManager : MonoBehaviour {
     {
         //初始化游戏
         InitBoard();
+        ClearAllMatches();
     }
 
     /// <summary>
@@ -154,6 +154,7 @@ public class BoardManager : MonoBehaviour {
                 }
                 */
                 //测试双直线组合
+                /*
                 if (i == 4 && j == 4)
                 {
                     current.sprite.spriteName = "10_10";
@@ -161,6 +162,40 @@ public class BoardManager : MonoBehaviour {
                 if (i == 5 && j == 4)
                 {
                     current.sprite.spriteName = "10_20";
+                }*/
+
+                //测试双all组合
+                /*
+                if (i == 4 && j == 4)
+                {
+                    current.sprite.spriteName = "All";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "All";
+                }*/
+
+                //测试all+linear组合
+                /*
+                if (i == 4 && j == 4)
+                {
+                    current.sprite.spriteName = "10_10";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "All";
+                }
+                */
+
+                //测试all+bomb组合
+                
+                if (i == 4 && j == 4)
+                {
+                    current.sprite.spriteName = "10_10";
+                }
+                if (i == 5 && j == 4)
+                {
+                    current.sprite.spriteName = "20_30";
                 }
 
                 //previousBelow[j] = newSprite;
@@ -215,7 +250,8 @@ public class BoardManager : MonoBehaviour {
             GetTileByDirection(current,TileDirection.Left),
             GetTileByDirection(current,TileDirection.Right)};
 
-		for (int i = 0; i < tempTileList.Length; i++) {
+        string currentStart = current.sprite.spriteName.Substring(0, 2);
+        for (int i = 0; i < tempTileList.Length; i++) {
 			//如果Item不合法，跳过
 			if (tempTileList [i] == null)
 				continue;
@@ -223,7 +259,7 @@ public class BoardManager : MonoBehaviour {
 			if (current.sprite.spriteName == tempTileList [i].sprite.spriteName) {
 				FillSameTilesList (tempTileList[i]);//迭代的方法，继续找相邻的相同元素
 			}*/
-            string currentStart = current.sprite.spriteName.Substring(0, 2);
+            
             string tempStart = tempTileList[i].sprite.spriteName.Substring(0, 2);
             if (currentStart == tempStart)
             {
@@ -298,7 +334,7 @@ public class BoardManager : MonoBehaviour {
         {
             mt = MatchType.Four_Horizental;
         }
-        if(rowCount == 3 && columnCount == 3)
+        if(rowCount >= 3 && columnCount >= 3)
         {
             mt = MatchType.Five_Bomb;
         }
@@ -336,7 +372,7 @@ public class BoardManager : MonoBehaviour {
             //将被消除的Item在全局列表中移除
 
             //Tile的形态变化
-            if(tile == current && mt != MatchType.Three_Normal)
+            if(tile == current && mt != MatchType.Three_Normal && tile.sprite.spriteName.Length == 2)
             {
                 switch (mt)
                 {
@@ -404,6 +440,7 @@ public class BoardManager : MonoBehaviour {
                         default:
                             break;
                     }
+
                 }
                 else
                 {
@@ -420,27 +457,75 @@ public class BoardManager : MonoBehaviour {
         mt = MatchType.Three_Normal;
         tempBoomList.AddRange(boomList);
 
-        yield return StartCoroutine(BoomMatch(boomList));
+        yield return StartCoroutine(EffectBoomList(boomList));
 
         //检测Item是否已经开发播放离开动画
         //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
         //yield return 0;
         //}
 
-        //延迟0.2秒
-        yield return new WaitForSeconds (0.2f);
-		//开启下落
-		yield return StartCoroutine (ItemsDrop ());
-		//延迟0.38秒
-		yield return new WaitForSeconds (0.38f);
+        yield return BoomClear(tempBoomList);
 
-		foreach (var item in tempBoomList) {
-			//回收Item
-			ObjectPool.instance.SetGameObject(item.gameObject);
-		}
 	}
 
-    IEnumerator BoomMatch(List<Tile> boomList)
+    List<Tile> EffectTriggered(Tile tile)
+    {
+        if (tile.hasCheck) return null;
+        List<Tile> boomList = new List<Tile>();
+        //特殊Tile的效果触发
+        if (tile.sprite.spriteName.Length > 2)
+        {
+            boomList.Add(tile);
+            string end = tile.sprite.spriteName.Substring(2, 3);
+            switch (end)
+            {
+                case "_10":
+                    foreach (Tile rowTile in Tiles)
+                    {
+                        if (tile == null || rowTile == null) continue;
+                        if (rowTile.tileRow == tile.tileRow && rowTile.tileColumn != tile.tileColumn)
+                        {
+                            Tiles[rowTile.tileRow, rowTile.tileColumn].hasCheck = true;
+                            boomList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
+                        }
+                    }
+                    break;
+                case "_20":
+                    foreach (Tile columnTile in Tiles)
+                    {
+                        if (tile == null || columnTile == null) continue;
+                        if (columnTile.tileColumn == tile.tileColumn && columnTile.tileRow != tile.tileRow)
+                        {
+                            Tiles[columnTile.tileRow, columnTile.tileColumn].hasCheck = true;
+                            boomList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
+                        }
+                    }
+                    break;
+                case "_30":
+                    foreach (Tile nearTile in Tiles)
+                    {
+                        if (tile == null || nearTile == null) continue;
+                        int distance = Mathf.Abs(nearTile.tileColumn - tile.tileColumn) + Mathf.Abs(nearTile.tileRow - tile.tileRow);
+                        if (distance > 0 && distance <= 2)
+                        {
+                            Tiles[nearTile.tileRow, nearTile.tileColumn].hasCheck = true;
+                            boomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            Tiles[tile.tileRow, tile.tileColumn] = null;
+        }
+
+        return boomList;
+    }
+
+    IEnumerator EffectBoomList(List<Tile> boomList)
     {
         foreach (Tile tile in boomList)
         {
@@ -449,9 +534,6 @@ public class BoardManager : MonoBehaviour {
             Tiles[tile.tileRow, tile.tileColumn] = null;
         }
         yield break;
-
-        //延迟0.2秒
-        yield return new WaitForSeconds(0.2f);
     }
 
     public void Boom(List<Tile> boomList)
@@ -477,41 +559,85 @@ public class BoardManager : MonoBehaviour {
                 allCount++;
             }
         }
+        //双直线
         if (linearCount == 2)
         {
             StartCoroutine(ManipulateBoomList(boomList, boomList[0]));
             StartCoroutine(ManipulateBoomList(boomList, boomList[1]));
             return;
         }
-
+        //双炸弹
         if(bombCount == 2)
         {
-            StartCoroutine(SuperBomb(boomList));
+            StartCoroutine(DuoBomb(boomList));
             return;
+        }
+        //直线+炸弹
+        if(linearCount == 1 && bombCount == 1)
+        {
+            StartCoroutine(LinearBomb(boomList));
+            return;
+        }
+        //双全消
+        if(allCount == 2)
+        {
+            StartCoroutine(DuoAll(boomList));
+            return;
+        }
+
+        Debug.Log("allCount = " + allCount + ", " + "linearCount = " + linearCount + ", "+ "bombCount = " + bombCount);
+        if(allCount == 1)
+        {
+            //全消+单色
+            if(linearCount == 0 && bombCount == 0)
+            {
+                Tile gemTile;
+                if (boomList[0].sprite.spriteName != "All")
+                {
+                    gemTile = boomList[0];
+                }
+                else
+                {
+                    gemTile = boomList[1];
+                }
+                StartCoroutine(AllGem(gemTile));
+                return;
+            }
+            //全消+直线
+            if(linearCount == 1)
+            {
+                Tile linearTile;
+                if(boomList[0].sprite.spriteName != "All")
+                {
+                    linearTile = boomList[0];
+                }
+                else
+                {
+                    linearTile = boomList[1];
+                }
+                StartCoroutine(AllLinear(linearTile));
+                return;
+            }
+            //全消+炸弹
+            if(bombCount == 1)
+            {
+                Tile bombTile;
+                if (boomList[0].sprite.spriteName != "All")
+                {
+                    bombTile = boomList[0];
+                }
+                else
+                {
+                    bombTile = boomList[1];
+                }
+                StartCoroutine(AllBomb(bombTile));
+                return;
+            }
         }
     }
 
-    IEnumerator SuperBomb(List<Tile> boomList)
+    IEnumerator BoomClear(List<Tile> boomList)
     {
-        List<Tile> superBoomList = new List<Tile>();
-        superBoomList.AddRange(boomList);
-        foreach (Tile nearTile in Tiles)
-        {
-            //if (nearTile == boomList[0] || nearTile == boomList[1]) continue;
-            float distance = Mathf.Abs(nearTile.tileColumn - (boomList[0].tileColumn + boomList[1].tileColumn) / 2.0f) + Mathf.Abs(nearTile.tileRow - (boomList[0].tileRow + boomList[1].tileRow) / 2.0f);
-            if (distance >= 1.5f && distance <= 3.5f)
-            {
-                superBoomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
-            }
-        }
-        
-        yield return StartCoroutine(BoomMatch(superBoomList));
-
-        //检测Item是否已经开发播放离开动画
-        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
-        //yield return 0;
-        //}
-
         //延迟0.2秒
         yield return new WaitForSeconds(0.2f);
         //开启下落
@@ -519,11 +645,285 @@ public class BoardManager : MonoBehaviour {
         //延迟0.38秒
         yield return new WaitForSeconds(0.38f);
 
-        foreach (Tile item in superBoomList)
+        foreach (Tile item in boomList)
         {
             //回收Item
             ObjectPool.instance.SetGameObject(item.gameObject);
         }
+    }
+
+    IEnumerator DuoBomb(List<Tile> boomList)
+    {
+        List<Tile> finalList = new List<Tile>();
+        finalList.AddRange(boomList);
+        foreach (Tile nearTile in Tiles)
+        {
+            //if (nearTile == boomList[0] || nearTile == boomList[1]) continue;
+            float distance = Mathf.Abs(nearTile.tileColumn - (boomList[0].tileColumn + boomList[1].tileColumn) / 2.0f) + Mathf.Abs(nearTile.tileRow - (boomList[0].tileRow + boomList[1].tileRow) / 2.0f);
+            if (distance >= 1.5f && distance <= 3.5f)
+            {
+                finalList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+            }
+        }
+        
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        yield return BoomClear(finalList);
+    }
+
+    IEnumerator DuoAll(List<Tile> boomList)
+    {
+        List<Tile> finalList = new List<Tile>();
+        foreach (Tile anyTile in Tiles)
+        {
+            finalList.Add(anyTile);
+        }
+
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        yield return BoomClear(finalList);
+    }
+
+    IEnumerator LinearBomb(List<Tile> linearBombList)
+    {
+        Tile bomb;
+        Tile linear;
+        if (linearBombList[0].sprite.spriteName.EndsWith("_30"))
+        {
+            bomb = linearBombList[0];
+            linear = linearBombList[1];
+        }
+        else
+        {
+            bomb = linearBombList[1];
+            linear = linearBombList[0];
+        }
+
+        List<Tile> finalList = new List<Tile>();
+        finalList.AddRange(linearBombList);
+        //横向数排一起消除
+        if (linear.sprite.spriteName.EndsWith("_10"))
+        {
+            foreach(Tile gem in Tiles)
+            {
+                int rowdistance = Mathf.Abs(gem.tileRow - linear.tileRow);
+                if(rowdistance <= 2)
+                {
+                    finalList.Add(gem);
+                }
+            }
+        }
+        if (linear.sprite.spriteName.EndsWith("_20"))
+        {
+            foreach (Tile gem in Tiles)
+            {
+                int columnistance = Mathf.Abs(gem.tileColumn - linear.tileColumn);
+                if (columnistance <= 2)
+                {
+                    finalList.Add(gem);
+                }
+            }
+        }
+
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        yield return BoomClear(finalList);
+    }
+
+    IEnumerator AllLinear(Tile linearTile)
+    {
+        List<Tile> superLinearList = new List<Tile>();
+        superLinearList.Add(linearTile);
+        foreach (Tile anyTile in Tiles)
+        {
+            if (anyTile.sprite.spriteName.Length > 2) continue;
+            if(anyTile.sprite.spriteName.Substring(0,2) == linearTile.sprite.spriteName.Substring(0, 2))
+            {
+                int randomFour = Random.Range(0, 2);
+                if (randomFour == 1)
+                {
+                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_10";
+                }
+                else
+                {
+                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_20";
+                }
+                superLinearList.Add(anyTile);
+            }
+
+        }
+
+        List<Tile> finalList = new List<Tile>();
+        finalList.AddRange(superLinearList);
+        foreach (Tile randomTile in superLinearList)
+        {
+            string end = randomTile.sprite.spriteName.Substring(2, 3);
+            if(end == "_10")
+            {
+                foreach (Tile rowTile in Tiles)
+                {
+                    if (rowTile == null || randomTile == null) continue;
+                    if (rowTile.tileRow == randomTile.tileRow && rowTile.tileColumn != randomTile.tileColumn)
+                    {
+                        finalList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
+                    }
+                }
+            }
+            else
+            {
+                foreach (Tile column in Tiles)
+                {
+                    if (column == null || randomTile == null) continue;
+                    if (column.tileColumn == randomTile.tileColumn && column.tileRow != randomTile.tileRow)
+                    {
+                        finalList.Add(Tiles[column.tileRow, column.tileColumn]);
+                    }
+                }
+            }
+            
+        }
+
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+        yield return BoomClear(finalList);
+    }
+
+    IEnumerator AllBomb(Tile bombTile)
+    {
+        List<Tile> allBombList = new List<Tile>();
+        allBombList.Add(bombTile);
+        foreach (Tile anyTile in Tiles)
+        {
+            if (anyTile.sprite.spriteName.Substring(0, 2) == bombTile.sprite.spriteName.Substring(0, 2))
+            {
+                anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_30";
+                allBombList.Add(anyTile);
+            }
+
+        }
+
+        List<Tile> finalList = new List<Tile>();
+        finalList.AddRange(allBombList);
+        foreach (Tile bomb in finalList)
+        {
+            foreach(Tile nearTile in Tiles)
+            {
+                if (bomb == null || nearTile == null) continue;
+                int distance = Mathf.Abs(nearTile.tileColumn - bomb.tileColumn) + Mathf.Abs(nearTile.tileRow - bomb.tileRow);
+                if (distance > 0 && distance <= 2)
+                {
+                    allBombList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                }
+            }
+            
+        }
+
+        finalList.AddRange(allBombList);
+
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        yield return BoomClear(finalList);
+    }
+
+    IEnumerator AllGem(Tile gemTile)
+    {
+        List<Tile> allGemList = new List<Tile>();
+        allGemList.Add(gemTile);
+        foreach (Tile anyTile in Tiles)
+        {
+            if (anyTile.sprite.spriteName.Substring(0, 2) == gemTile.sprite.spriteName.Substring(0, 2))
+            {
+                allGemList.Add(anyTile);
+            }
+        }
+
+        List<Tile> finalList = new List<Tile>();
+        finalList.AddRange(allGemList);
+
+        foreach (Tile gem in finalList)
+        {
+            //特殊Tile的效果触发
+            if (gem.sprite.spriteName.Length > 2)
+            {
+                allGemList.Add(gem);
+                string end = gem.sprite.spriteName.Substring(2, 3);
+                switch (end)
+                {
+                    case "_10":
+                        foreach (Tile rowTile in Tiles)
+                        {
+                            if (gem == null || rowTile == null) continue;
+                            if (rowTile.tileRow == gem.tileRow && rowTile.tileColumn != gem.tileColumn)
+                            {
+                                allGemList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
+                            }
+                        }
+                        break;
+                    case "_20":
+                        foreach (Tile columnTile in Tiles)
+                        {
+                            if (gem == null || columnTile == null) continue;
+                            if (columnTile.tileColumn == gem.tileColumn && columnTile.tileRow != gem.tileRow)
+                            {
+                                allGemList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
+                            }
+                        }
+                        break;
+                    case "_30":
+                        foreach (Tile nearTile in Tiles)
+                        {
+                            if (gem == null || nearTile == null) continue;
+                            int distance = Mathf.Abs(nearTile.tileColumn - gem.tileColumn) + Mathf.Abs(nearTile.tileRow - gem.tileRow);
+                            if (distance > 0 && distance <= 2)
+                            {
+                                allGemList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                Tiles[gem.tileRow, gem.tileColumn] = null;
+            }
+        }
+
+        finalList.AddRange(allGemList);
+
+        yield return StartCoroutine(EffectBoomList(finalList));
+
+        //检测Item是否已经开发播放离开动画
+        //while (!tempBoomList [0].GetComponent<AnimatedButton> ().CheckPlayExit ()) {
+        //yield return 0;
+        //}
+
+        yield return BoomClear(finalList);
     }
 
 
