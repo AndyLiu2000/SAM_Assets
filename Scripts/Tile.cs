@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class Tile : MonoBehaviour {
 
-	public int tileRow;//行
-	public int tileColumn;//列
+	public int row;//行
+	public int col;//列
 	//当前图案
 	public UISprite sprite;
 
@@ -19,6 +19,7 @@ public class Tile : MonoBehaviour {
 	void Awake()
 	{
 		sprite = GetComponent<UISprite>();
+        sprite.depth = 10;
         //Img = transform.GetChild(0).GetComponent<UISprite>();
     }
 
@@ -32,7 +33,6 @@ public class Tile : MonoBehaviour {
 	/// </summary>
 	public void CheckAdjacentMatch()
 	{
-        Debug.Log("CheckAdjacentMatch");
         //每个tile检查自己是否能否作为消除中心
 		boardManager.SameTilesList.Clear ();
 		boardManager.MatchList.Clear ();

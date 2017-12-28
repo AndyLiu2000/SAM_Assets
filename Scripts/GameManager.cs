@@ -31,7 +31,11 @@ public class GameManager :MonoBehaviour {
     //目录
     //public const string ResourcesPrefab = "Prefabs/";
     //文件名称
+    public const string Obstacle = "Obstacle";
     public const string Tile = "Tile";
+    public const string Ice = "Ice";
+    public const string Cage = "Cage";
+    public const string Block = "Block";
 
     //动画参数名称
     public const string Pressed = "Pressed";

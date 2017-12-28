@@ -206,5 +206,5 @@ public class Formula {
         return list[i];
     }
 
-	
+    
 }

@@ -16,29 +16,52 @@ public enum MatchType
     Four_Horizental,
     Four_Vertical,
     Five_Bomb,
-    Five_All
+    Five_Any
+}
+
+public enum SEType
+{
+    Normal_Boom,
+    Horizontal_Boom,
+    Vertical_Boom,
+    Bomb_Boom,
+    All_Boom,
+    DuoAll_Boom
 }
 
 public class BoardManager : MonoBehaviour {
 
 	//单例
 	public static BoardManager instance;
-	//随机图案
-	public UISprite[] randomUISprite;
+    //常量
+    public const string FIVE_ALL = "00_00";
+    public const string Horizon = "_10";
+    public const string Vertical = "_20";
+    public const string Bomb = "_30";
+    //随机图案
+    public UISprite[] randomUISprite;
     public string[] randomGemName = new string[] { "10", "20", "30", "40", "50" };
     //行列
     public int BoardRow = 9;
 	public int BoardColumn = 9;
 	//偏移量
 	public Vector2 offset = new Vector2(0,0);
-	//所有的Item
+	//所有的Tile
 	public Tile[,] Tiles;
-	//所有Item的坐标
+	//所有Tile的坐标
 	public Vector3[,] TilePos;
 	//相同Item列表
 	public List<Tile> SameTilesList;
 	//要消除的Item列表
 	public List<Tile> MatchList;
+
+    public Ice[,] Ices;
+
+    public Cage[,] Cages;
+
+    public Block[,] Blocks;
+
+    public Obstacle[,] Obstacles;
 
     //随机颜色
     public Color randomColor;
@@ -53,14 +76,24 @@ public class BoardManager : MonoBehaviour {
     public GameObject TilePrefabs;
 
     private MatchType mt = MatchType.Three_Normal;
+    GameObject Normal_Boom;
+    GameObject Horizontal_Boom;
+    GameObject Vertical_Boom;
+    GameObject Bomb_Boom;
+    GameObject All_Boom;
+    GameObject DuoAll_Boom;
 
-	void Awake()
+    void Awake()
 	{
 		instance = this;
 		Tiles = new Tile[BoardRow,BoardColumn];
 		TilePos = new Vector3[BoardRow,BoardColumn];
 		SameTilesList = new List<Tile> ();
 		MatchList = new List<Tile> ();
+        Ices = new Ice[BoardRow, BoardColumn];
+        Cages = new Cage[BoardRow, BoardColumn];
+        Blocks = new Block[BoardRow, BoardColumn];
+        Obstacles = new Obstacle[BoardRow, BoardColumn];
     }
 
     void Start()
@@ -68,6 +101,13 @@ public class BoardManager : MonoBehaviour {
         //初始化游戏
         InitBoard();
         ClearAllMatches();
+
+        Normal_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
+        Horizontal_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
+        Vertical_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
+        Bomb_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
+        All_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
+        DuoAll_Boom = (GameObject)(Resources.Load("SEPrefabs" + "/" + "Skill_Behit_H"));
     }
 
     /// <summary>
@@ -88,8 +128,6 @@ public class BoardManager : MonoBehaviour {
 		tileSize = GetItemSize ();
         offset.x = -gameObject.GetComponent<UIPanel>().width / 2 + tileSize / 2;
         offset.y = -gameObject.GetComponent<UIPanel>().height / 2 + tileSize / 2;
-        UISprite[] previousBelow = new UISprite[BoardRow];
-        UISprite previousLeft = null;
 
         string[] previousBelowString = new string[BoardRow];
         string previousLeftString = null;
@@ -97,20 +135,91 @@ public class BoardManager : MonoBehaviour {
         //生成ITEM
         for (int i = 0; i < BoardRow; i++) {
 			for (int j = 0; j < BoardColumn; j++) {
-				//生成
-				GameObject currentItem = ObjectPool.instance.GetGameObject(GameManager.Tile, gameObject.transform);
+                Ices[i, j] = null;
+                //保存到数组
+                Tiles[i, j] = null;
+                //记录世界坐标
+                TilePos[i, j] = new Vector3(j * tileSize, i * tileSize, 0) + new Vector3(offset.x, offset.y, 0);
+                //保存到数组
+                Cages[i, j] = null;
+                //保存到数组
+                Blocks[i, j] = null;
+                //保存到数组
+                Obstacles[i, j] = null;
+
+                if(j == 4 && i > 2 && i < 6){
+                    //生成
+                    GameObject currentObstacle = ObjectPool.instance.GetGameObject(GameManager.Obstacle, gameObject.transform);
+
+                    //设置坐标
+                    currentObstacle.transform.localPosition =
+                        new Vector3(j * tileSize, i * tileSize, 0) + new Vector3(offset.x, offset.y, 0);
+                    //获取Item组件
+                    Obstacle obstacle = currentObstacle.GetComponent<Obstacle>();
+                    obstacle.row = i;
+                    obstacle.col = j;
+
+                    //保存到数组
+                    Obstacles[i, j] = obstacle;
+                    //记录世界坐标
+                    //记录世界坐标
+                    TilePos[i, j] = currentObstacle.transform.position;
+                    continue;
+                }
+
+                /*
+                if (j == 5 && i > 2)
+                {
+                    //生成
+                    GameObject currentBlock = ObjectPool.instance.GetGameObject(GameManager.Block, gameObject.transform);
+
+                    //设置坐标
+                    currentBlock.transform.localPosition =
+                        new Vector3(j * tileSize, i * tileSize, 0) + new Vector3(offset.x, offset.y, 0);
+
+                    //获取Item组件
+                    Block block = currentBlock.GetComponent<Block>();
+                    block.row = i;
+                    block.col = j;
+
+                    //保存到数组
+                    Blocks[i, j] = block;
+                    //记录世界坐标
+                    TilePos[i, j] = currentBlock.transform.position;
+                    continue;
+                }*/
+                /*
+                //生成
+                GameObject currentIce = ObjectPool.instance.GetGameObject(GameManager.Ice, gameObject.transform);
+
+                //设置坐标
+                currentIce.transform.localPosition =
+                    new Vector3(j * tileSize, i * tileSize, 0) + new Vector3(offset.x, offset.y, 0);
+
+                //获取Item组件
+                Ice ice = currentIce.GetComponent<Ice>();
+                ice.iceRow = i;
+                ice.iceColumn = j;
+
+                //保存到数组
+                Ices[i, j] = ice;
+                //记录世界坐标
+                IcesPos[i, j] = currentIce.transform.position;
+                */
+                //生成
+                GameObject currentTile = ObjectPool.instance.GetGameObject(GameManager.Tile, gameObject.transform);
                 
                 //设置坐标
-                currentItem.transform.localPosition = 
+                currentTile.transform.localPosition = 
 					new Vector3(j * tileSize,i * tileSize,0) + new Vector3(offset.x,offset.y,0);
 
                 //随机图案编号
                 //int random = Random.Range (0, randomSprites.Length);
 				//获取Item组件
-				Tile current = currentItem.GetComponent<Tile> ();
+				Tile current = currentTile.GetComponent<Tile> ();
 				//设置行列
-				current.tileRow = i;
-				current.tileColumn = j;
+				current.row = i;
+				current.col = j;
 				//设置图案
 				//current.sprite = randomSprites[random];
                 /*List<UISprite> possibleCharacters = new List<UISprite>(); // 1
@@ -143,36 +252,41 @@ public class BoardManager : MonoBehaviour {
                 }*/
 
                 //测试双炸弹组合
-                /*
+                
                 if (i == 4 && j == 4)
                 {
                     current.sprite.spriteName = "10_30";
                 }
                 if (i == 5 && j == 4)
                 {
-                    current.sprite.spriteName = "10_30";
+                    current.sprite.spriteName = "20_30";
                 }
-                */
+                if (i == 2 && j == 4)
+                {
+                    current.sprite.spriteName = "30_10";
+                }
+                
+
                 //测试双直线组合
                 /*
                 if (i == 4 && j == 4)
                 {
-                    current.sprite.spriteName = "10_10";
+                    current.sprite.spriteName = "10_20";
                 }
                 if (i == 5 && j == 4)
                 {
                     current.sprite.spriteName = "10_20";
-                }*/
-
+                }
+                */
                 //测试双all组合
                 /*
                 if (i == 4 && j == 4)
                 {
-                    current.sprite.spriteName = "All";
+                    current.sprite.spriteName = FIVE_ALL;
                 }
                 if (i == 5 && j == 4)
                 {
-                    current.sprite.spriteName = "All";
+                    current.sprite.spriteName = FIVE_ALL;
                 }*/
 
                 //测试all+linear组合
@@ -183,32 +297,56 @@ public class BoardManager : MonoBehaviour {
                 }
                 if (i == 5 && j == 4)
                 {
-                    current.sprite.spriteName = "All";
+                    current.sprite.spriteName = FIVE_ALL;
                 }
                 */
 
                 //测试all+bomb组合
-                
+                /*
                 if (i == 4 && j == 4)
                 {
-                    current.sprite.spriteName = "10_10";
+                    current.sprite.spriteName = FIVE_ALL;
                 }
                 if (i == 5 && j == 4)
                 {
                     current.sprite.spriteName = "20_30";
                 }
-
+                */
                 //previousBelow[j] = newSprite;
                 //previousLeft = newSprite;
                 previousBelowString[j] = newString;
                 previousLeftString = newString;
-                //设置图片
-                //current.Img = randomSprites[random];
                 //保存到数组
                 Tiles [i, j] = current;
 				//记录世界坐标
-				TilePos [i, j] = currentItem.transform.position;
-			}
+				TilePos [i, j] = currentTile.transform.position;
+
+                /*
+                if (j!=4 || i<3)
+                {
+                    Cages[i, j] = null;
+                    continue;
+                }
+                //生成
+                GameObject currentCage = ObjectPool.instance.GetGameObject(GameManager.Cage, gameObject.transform);
+
+                //设置坐标
+                currentCage.transform.localPosition =
+                    new Vector3(j * tileSize, i * tileSize, 0) + new Vector3(offset.x, offset.y, 0);
+
+                //获取Item组件
+                Cage cage = currentCage.GetComponent<Cage>();
+
+                //设置行列
+                cage.cageRow = i;
+                cage.cageColumn = j;
+
+                //保存到数组
+                Cages[i, j] = cage;
+                //记录世界坐标
+                CagesPos[i, j] = currentCage.transform.position;
+                */
+            }
 		}
 	}
 
@@ -218,7 +356,7 @@ public class BoardManager : MonoBehaviour {
 		bool hasMatch = false;
 		foreach (Tile tile in Tiles) {
 			//指定位置的Item存在，且没有被检测过
-			if (tile && !tile.hasCheck) {
+			if (tile != null && !tile.hasCheck) {
 				//检测周围的消除
 				tile.CheckAdjacentMatch ();
 				if (MatchList.Count > 0) {
@@ -284,7 +422,7 @@ public class BoardManager : MonoBehaviour {
 		foreach (Tile tile in SameTilesList) {
 
 			//如果在同一行
-			if (tile.tileRow == current.tileRow) {
+			if (tile.row == current.row) {
 				//判断该点与Current中间有无间隙
 				bool rowCanBoom  = CheckItemsInterval(true,current,tile);
 				if (rowCanBoom) {
@@ -296,7 +434,7 @@ public class BoardManager : MonoBehaviour {
 				}
 			}
 			//如果在同一列
-			if (tile.tileColumn == current.tileColumn) {
+			if (tile.col == current.col) {
 				//判断该点与Curren中间有无间隙
 				bool columnCanBoom  = CheckItemsInterval(false,current,tile);
 				if (columnCanBoom) {
@@ -340,7 +478,7 @@ public class BoardManager : MonoBehaviour {
         }
         if(rowCount >= 5 || columnCount >= 5)
         {
-            mt = MatchType.Five_All;
+            mt = MatchType.Five_Any;
         }
 
 		//如果没有消除对象，返回
@@ -359,38 +497,40 @@ public class BoardManager : MonoBehaviour {
 	/// <returns>The boom list.</returns>
 	IEnumerator ManipulateBoomList(List<Tile> tempBoomList, Tile current)
 	{
+        bool isDeleteCurrent = true;
         List<Tile> boomList = new List<Tile>();
 		foreach (Tile tile in tempBoomList) {
 			tile.hasCheck = true;
 			tile.GetComponent<UISprite> ().alpha = 0.5f;
 
-            //离开动画
-
-            //item.GetComponent<AnimatedButton> ().Exit ();
-            //Boom声音
-            //AudioManager.instance.PlayMagicalAudio();
+            
             //将被消除的Item在全局列表中移除
 
             //Tile的形态变化
             if(tile == current && mt != MatchType.Three_Normal && tile.sprite.spriteName.Length == 2)
             {
+                isDeleteCurrent = false;
+                //离开动画
+                GenerateSEAtGameobjectPosition(tile.gameObject, SEType.Normal_Boom, true, null);
+                //Boom声音
+                //AudioManager.instance.PlayMagicalAudio();
                 switch (mt)
                 {
                     case MatchType.Four_Horizental:
                         tile.GetComponent<UISprite>().alpha = 1;
-                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0,2) + "_10";
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0,2) + Horizon;
                         break;
                     case MatchType.Four_Vertical:
                         tile.GetComponent<UISprite>().alpha = 1;
-                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + "_20";
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + Vertical;
                         break;
                     case MatchType.Five_Bomb:
                         tile.GetComponent<UISprite>().alpha = 1;
-                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + "_30";
+                        tile.sprite.spriteName = tile.sprite.spriteName.Substring(0, 2) + Bomb;
                         break;
-                    case MatchType.Five_All:
+                    case MatchType.Five_Any:
                         tile.GetComponent<UISprite>().alpha = 1;
-                        tile.sprite.spriteName = "All";
+                        tile.sprite.spriteName = FIVE_ALL;
                         break;
 
                     default:
@@ -400,62 +540,19 @@ public class BoardManager : MonoBehaviour {
             else
             {
                 //特殊Tile的效果触发
-                if (tile.sprite.spriteName.Length > 2)
-                {
-                    boomList.Add(tile);
-                    string end = tile.sprite.spriteName.Substring(2, 3);
-                    switch (end)
-                    {
-                        case "_10":
-                            foreach (Tile rowTile in Tiles)
-                            {
-                                if (tile == null || rowTile == null) continue;
-                                if (rowTile.tileRow == tile.tileRow && rowTile.tileColumn != tile.tileColumn)
-                                {
-                                    boomList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
-                                }
-                            }
-                            break;
-                        case "_20":
-                            foreach (Tile columnTile in Tiles)
-                            {
-                                if (tile == null || columnTile == null) continue;
-                                if (columnTile.tileColumn == tile.tileColumn && columnTile.tileRow != tile.tileRow)
-                                {
-                                    boomList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
-                                }
-                            }
-                            break;
-                        case "_30":
-                            foreach (Tile nearTile in Tiles)
-                            {
-                                if (tile == null || nearTile == null) continue;
-                                int distance = Mathf.Abs(nearTile.tileColumn - tile.tileColumn) + Mathf.Abs(nearTile.tileRow - tile.tileRow);
-                                if (distance > 0 && distance <= 2)
-                                {
-                                    boomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
-                                }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-
-                }
-                else
-                {
-                    Tiles[tile.tileRow, tile.tileColumn] = null;
-                }
+                boomList.AddRange(EffectTriggered(tile));
             }
         }
 
-        //如果是产生特殊效果，核心Tile要保留下来不消除
-        if(mt != MatchType.Three_Normal)
-        {
-            tempBoomList.Remove(current);
-        }
+        yield return StartCoroutine(BlockBoomList(tempBoomList));
+
+        if (!isDeleteCurrent) tempBoomList.Remove(current);
         mt = MatchType.Three_Normal;
         tempBoomList.AddRange(boomList);
+        if (!boomList.Contains(current))
+        {
+            yield return StartCoroutine(NonEffectBoomTile(current));
+        }
 
         yield return StartCoroutine(EffectBoomList(boomList));
 
@@ -470,46 +567,87 @@ public class BoardManager : MonoBehaviour {
 
     List<Tile> EffectTriggered(Tile tile)
     {
-        if (tile.hasCheck) return null;
         List<Tile> boomList = new List<Tile>();
+        tile.hasCheck = true;
+        tile.GetComponent<UISprite>().alpha = 0.5f;
+        boomList.Add(tile);
         //特殊Tile的效果触发
         if (tile.sprite.spriteName.Length > 2)
         {
-            boomList.Add(tile);
+            //boomList.Add(tile);
             string end = tile.sprite.spriteName.Substring(2, 3);
             switch (end)
             {
-                case "_10":
-                    foreach (Tile rowTile in Tiles)
+                case Horizon:
+                    foreach (Tile refTile in Tiles)
                     {
-                        if (tile == null || rowTile == null) continue;
-                        if (rowTile.tileRow == tile.tileRow && rowTile.tileColumn != tile.tileColumn)
+                        if (tile == null || refTile == null) continue;
+                        if (refTile.row == tile.row && refTile.col != tile.col)
                         {
-                            Tiles[rowTile.tileRow, rowTile.tileColumn].hasCheck = true;
-                            boomList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
+                            boomListHandler(boomList, refTile);
+                        }
+                    }
+
+                    foreach (Block b in Blocks)
+                    {
+                        if (tile == null || b == null) continue;
+                        if (b.row == tile.row && b.col != tile.col)
+                        {
+                            b.Boom();
+                        }
+                    }
+
+                    break;
+                case Vertical:
+                    foreach (Tile refTile in Tiles)
+                    {
+                        if (tile == null || refTile == null) continue;
+                        if (refTile.col == tile.col && refTile.row != tile.row)
+                        {
+                            boomListHandler(boomList, refTile);
+                        }
+                    }
+                    foreach (Block b in Blocks)
+                    {
+                        if (tile == null || b == null) continue;
+                        if (b.col == tile.col && b.row != tile.row)
+                        {
+                            b.Boom();
                         }
                     }
                     break;
-                case "_20":
-                    foreach (Tile columnTile in Tiles)
+                case Bomb:
+                    foreach (Tile refTile in Tiles)
                     {
-                        if (tile == null || columnTile == null) continue;
-                        if (columnTile.tileColumn == tile.tileColumn && columnTile.tileRow != tile.tileRow)
-                        {
-                            Tiles[columnTile.tileRow, columnTile.tileColumn].hasCheck = true;
-                            boomList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
-                        }
-                    }
-                    break;
-                case "_30":
-                    foreach (Tile nearTile in Tiles)
-                    {
-                        if (tile == null || nearTile == null) continue;
-                        int distance = Mathf.Abs(nearTile.tileColumn - tile.tileColumn) + Mathf.Abs(nearTile.tileRow - tile.tileRow);
+                        if (tile == null || refTile == null) continue;
+                        int distance = Mathf.Abs(refTile.col - tile.col) + Mathf.Abs(refTile.row - tile.row);
                         if (distance > 0 && distance <= 2)
                         {
-                            Tiles[nearTile.tileRow, nearTile.tileColumn].hasCheck = true;
-                            boomList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                            boomListHandler(boomList, refTile);
+                        }
+                    }
+                    foreach (Block b in Blocks)
+                    {
+                        if (tile == null || b == null) continue;
+                        int distance = Mathf.Abs(b.col - tile.col) + Mathf.Abs(b.row - tile.row);
+                        if (distance > 0 && distance <= 2)
+                        {
+                            b.Boom();
+                        }
+                    }
+                    break;
+                case "_00":
+                    //随机数
+                    int random = Random.Range(0, randomGemName.Length);
+                    //修改脚本中的图片
+                    string randomGenName = randomGemName[random];
+
+                    foreach (Tile refTile in Tiles)
+                    {
+                        if (refTile == null) continue;
+                        if (refTile.sprite.spriteName.Substring(0, 2) == randomGenName)
+                        {
+                            boomListHandler(boomList, refTile);
                         }
                     }
                     break;
@@ -519,21 +657,90 @@ public class BoardManager : MonoBehaviour {
         }
         else
         {
-            Tiles[tile.tileRow, tile.tileColumn] = null;
+            //boomList.Add(tile);
+            
+            Tiles[tile.row, tile.col] = null;
+
         }
 
         return boomList;
+    }
+
+    void boomListHandler(List<Tile> boomList,Tile tile)
+    {
+        boomList.Add(tile);
+        if (tile.sprite.spriteName.Length > 2 && !tile.hasCheck)
+        {
+            boomList.AddRange(EffectTriggered(tile));
+        }
+    }
+
+    IEnumerator BlockBoomList(List<Tile> boomList)
+    {
+        HashSet<Block> boomBlockList = new HashSet<Block>();
+        foreach (Tile tile in boomList)
+        {
+            boomBlockList.Add(GetBlockByDirection(tile, TileDirection.Up));
+            boomBlockList.Add(GetBlockByDirection(tile, TileDirection.Down));
+            boomBlockList.Add(GetBlockByDirection(tile, TileDirection.Left));
+            boomBlockList.Add(GetBlockByDirection(tile, TileDirection.Right));
+        }
+        foreach(Block b in boomBlockList)
+        {
+            if (b != null)
+            {
+                b.Boom();
+            }
+            
+        }
+        boomBlockList.Clear();
+        yield break;
+    }
+
+    IEnumerator NonEffectBoomTile(Tile tile)
+    {
+        tile.hasCheck = true;
+
+        if (Cages[tile.row, tile.col] != null)
+        {
+            Cages[tile.row, tile.col].Boom();
+        }
+        else if(Ices[tile.row, tile.col] != null)
+        {
+            Ices[tile.row, tile.col].Boom();
+        }
+        yield break;
     }
 
     IEnumerator EffectBoomList(List<Tile> boomList)
     {
         foreach (Tile tile in boomList)
         {
+            if(Cages[tile.row, tile.col] != null)
+            {
+                Cages[tile.row, tile.col].Boom();
+            }
+            else if(Ices[tile.row, tile.col] != null)
+            {
+                Ices[tile.row, tile.col].Boom();
+            }
+
             tile.hasCheck = true;
             tile.GetComponent<UISprite>().alpha = 0.5f;
-            Tiles[tile.tileRow, tile.tileColumn] = null;
+            //离开动画
+            GenerateSEAtGameobjectPosition(tile.gameObject, SEType.Normal_Boom, true, null);
+            Tiles[tile.row, tile.col] = null;
         }
         yield break;
+    }
+
+    void SpecialTileNonEffectBoom(Tile seTile)
+    {
+        seTile.hasCheck = true;
+        seTile.GetComponent<UISprite>().alpha = 0.5f;
+        Tiles[seTile.row, seTile.col] = null;
+        //回收Item
+        ObjectPool.instance.SetGameObject(seTile.gameObject);
     }
 
     public void Boom(List<Tile> boomList)
@@ -544,21 +751,22 @@ public class BoardManager : MonoBehaviour {
         int allCount = 0;
         foreach (Tile t in boomList)
         {
-            if (t.sprite.spriteName.EndsWith("_10") || t.sprite.spriteName.EndsWith("_20"))
+            if (t.sprite.spriteName.EndsWith(Horizon) || t.sprite.spriteName.EndsWith(Vertical))
             {
                 linearCount++;
             }
 
-            if (t.sprite.spriteName.EndsWith("_30"))
+            if (t.sprite.spriteName.EndsWith(Bomb))
             {
                 bombCount++;
             }
 
-            if(t.sprite.spriteName == "All")
+            if(t.sprite.spriteName == FIVE_ALL)
             {
                 allCount++;
             }
         }
+
         //双直线
         if (linearCount == 2)
         {
@@ -569,37 +777,46 @@ public class BoardManager : MonoBehaviour {
         //双炸弹
         if(bombCount == 2)
         {
+            SpecialTileNonEffectBoom(boomList[0]);
+            SpecialTileNonEffectBoom(boomList[1]);
             StartCoroutine(DuoBomb(boomList));
             return;
         }
         //直线+炸弹
         if(linearCount == 1 && bombCount == 1)
         {
+            SpecialTileNonEffectBoom(boomList[0]);
+            SpecialTileNonEffectBoom(boomList[1]);
             StartCoroutine(LinearBomb(boomList));
             return;
         }
         //双全消
         if(allCount == 2)
         {
+            SpecialTileNonEffectBoom(boomList[0]);
+            SpecialTileNonEffectBoom(boomList[1]);
             StartCoroutine(DuoAll(boomList));
             return;
         }
 
-        Debug.Log("allCount = " + allCount + ", " + "linearCount = " + linearCount + ", "+ "bombCount = " + bombCount);
         if(allCount == 1)
         {
             //全消+单色
             if(linearCount == 0 && bombCount == 0)
             {
                 Tile gemTile;
-                if (boomList[0].sprite.spriteName != "All")
+                Tile allTile;
+                if (boomList[0].sprite.spriteName != FIVE_ALL)
                 {
                     gemTile = boomList[0];
+                    allTile = boomList[1];
                 }
                 else
                 {
                     gemTile = boomList[1];
+                    allTile = boomList[0];
                 }
+                SpecialTileNonEffectBoom(allTile);
                 StartCoroutine(AllGem(gemTile));
                 return;
             }
@@ -607,14 +824,18 @@ public class BoardManager : MonoBehaviour {
             if(linearCount == 1)
             {
                 Tile linearTile;
-                if(boomList[0].sprite.spriteName != "All")
+                Tile allTile;
+                if(boomList[0].sprite.spriteName != FIVE_ALL)
                 {
                     linearTile = boomList[0];
+                    allTile = boomList[1];
                 }
                 else
                 {
                     linearTile = boomList[1];
+                    allTile = boomList[0];
                 }
+                SpecialTileNonEffectBoom(allTile);
                 StartCoroutine(AllLinear(linearTile));
                 return;
             }
@@ -622,14 +843,18 @@ public class BoardManager : MonoBehaviour {
             if(bombCount == 1)
             {
                 Tile bombTile;
-                if (boomList[0].sprite.spriteName != "All")
+                Tile allTile;
+                if (boomList[0].sprite.spriteName != FIVE_ALL)
                 {
                     bombTile = boomList[0];
+                    allTile = boomList[1];
                 }
                 else
                 {
                     bombTile = boomList[1];
+                    allTile = boomList[0];
                 }
+                SpecialTileNonEffectBoom(allTile);
                 StartCoroutine(AllBomb(bombTile));
                 return;
             }
@@ -640,16 +865,16 @@ public class BoardManager : MonoBehaviour {
     {
         //延迟0.2秒
         yield return new WaitForSeconds(0.2f);
-        //开启下落
-        yield return StartCoroutine(ItemsDrop());
-        //延迟0.38秒
-        yield return new WaitForSeconds(0.38f);
 
         foreach (Tile item in boomList)
         {
             //回收Item
             ObjectPool.instance.SetGameObject(item.gameObject);
         }
+        //开启下落
+        yield return StartCoroutine(ItemsDrop());
+        //延迟0.38秒
+        yield return new WaitForSeconds(0.38f);
     }
 
     IEnumerator DuoBomb(List<Tile> boomList)
@@ -658,14 +883,28 @@ public class BoardManager : MonoBehaviour {
         finalList.AddRange(boomList);
         foreach (Tile nearTile in Tiles)
         {
+            if (nearTile == null) continue;
             //if (nearTile == boomList[0] || nearTile == boomList[1]) continue;
-            float distance = Mathf.Abs(nearTile.tileColumn - (boomList[0].tileColumn + boomList[1].tileColumn) / 2.0f) + Mathf.Abs(nearTile.tileRow - (boomList[0].tileRow + boomList[1].tileRow) / 2.0f);
+            float distance = Mathf.Abs(nearTile.col - (boomList[0].col + boomList[1].col) / 2.0f) + Mathf.Abs(nearTile.row - (boomList[0].row + boomList[1].row) / 2.0f);
             if (distance >= 1.5f && distance <= 3.5f)
             {
-                finalList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
+                //特殊Tile的效果触发
+                finalList.AddRange(EffectTriggered(nearTile));
             }
         }
-        
+
+        foreach (Block b in Blocks)
+        {
+            if (b == null) continue;
+            //if (nearTile == boomList[0] || nearTile == boomList[1]) continue;
+            float distance = Mathf.Abs(b.col - (boomList[0].col + boomList[1].col) / 2.0f) + Mathf.Abs(b.row - (boomList[0].row + boomList[1].row) / 2.0f);
+            if (distance >= 1.5f && distance <= 3.5f)
+            {
+                //特殊Tile的效果触发
+                b.Boom();
+            }
+        }
+
         yield return StartCoroutine(EffectBoomList(finalList));
 
         //检测Item是否已经开发播放离开动画
@@ -684,6 +923,12 @@ public class BoardManager : MonoBehaviour {
             finalList.Add(anyTile);
         }
 
+        foreach (Block b in Blocks)
+        {
+            if(b != null)
+                b.Boom();
+        }
+
         yield return StartCoroutine(EffectBoomList(finalList));
 
         //检测Item是否已经开发播放离开动画
@@ -698,7 +943,7 @@ public class BoardManager : MonoBehaviour {
     {
         Tile bomb;
         Tile linear;
-        if (linearBombList[0].sprite.spriteName.EndsWith("_30"))
+        if (linearBombList[0].sprite.spriteName.EndsWith(Bomb))
         {
             bomb = linearBombList[0];
             linear = linearBombList[1];
@@ -712,25 +957,43 @@ public class BoardManager : MonoBehaviour {
         List<Tile> finalList = new List<Tile>();
         finalList.AddRange(linearBombList);
         //横向数排一起消除
-        if (linear.sprite.spriteName.EndsWith("_10"))
+        if (linear.sprite.spriteName.EndsWith(Horizon))
         {
             foreach(Tile gem in Tiles)
             {
-                int rowdistance = Mathf.Abs(gem.tileRow - linear.tileRow);
+                if (gem == null) continue;
+                int rowdistance = Mathf.Abs(gem.row - linear.row);
                 if(rowdistance <= 2)
                 {
                     finalList.Add(gem);
                 }
             }
+            foreach (Block b in Blocks)
+            {
+                int rowdistance = Mathf.Abs(b.row - linear.row);
+                if (rowdistance <= 2)
+                {
+                    b.Boom();
+                }
+            }
         }
-        if (linear.sprite.spriteName.EndsWith("_20"))
+        if (linear.sprite.spriteName.EndsWith(Vertical))
         {
             foreach (Tile gem in Tiles)
             {
-                int columnistance = Mathf.Abs(gem.tileColumn - linear.tileColumn);
+                if (gem == null) continue;
+                int columnistance = Mathf.Abs(gem.col - linear.col);
                 if (columnistance <= 2)
                 {
                     finalList.Add(gem);
+                }
+            }
+            foreach (Block b in Blocks)
+            {
+                int columnistance = Mathf.Abs(b.col - linear.col);
+                if (columnistance <= 2)
+                {
+                    b.Boom();
                 }
             }
         }
@@ -747,55 +1010,30 @@ public class BoardManager : MonoBehaviour {
 
     IEnumerator AllLinear(Tile linearTile)
     {
-        List<Tile> superLinearList = new List<Tile>();
-        superLinearList.Add(linearTile);
+        List<Tile> tempList = new List<Tile>();
+        tempList.Add(linearTile);
         foreach (Tile anyTile in Tiles)
         {
-            if (anyTile.sprite.spriteName.Length > 2) continue;
             if(anyTile.sprite.spriteName.Substring(0,2) == linearTile.sprite.spriteName.Substring(0, 2))
             {
                 int randomFour = Random.Range(0, 2);
                 if (randomFour == 1)
                 {
-                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_10";
+                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + Horizon;
                 }
                 else
                 {
-                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_20";
+                    anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + Vertical;
                 }
-                superLinearList.Add(anyTile);
+                tempList.Add(anyTile);
             }
-
         }
 
         List<Tile> finalList = new List<Tile>();
-        finalList.AddRange(superLinearList);
-        foreach (Tile randomTile in superLinearList)
+        foreach (Tile randomTile in tempList)
         {
-            string end = randomTile.sprite.spriteName.Substring(2, 3);
-            if(end == "_10")
-            {
-                foreach (Tile rowTile in Tiles)
-                {
-                    if (rowTile == null || randomTile == null) continue;
-                    if (rowTile.tileRow == randomTile.tileRow && rowTile.tileColumn != randomTile.tileColumn)
-                    {
-                        finalList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
-                    }
-                }
-            }
-            else
-            {
-                foreach (Tile column in Tiles)
-                {
-                    if (column == null || randomTile == null) continue;
-                    if (column.tileColumn == randomTile.tileColumn && column.tileRow != randomTile.tileRow)
-                    {
-                        finalList.Add(Tiles[column.tileRow, column.tileColumn]);
-                    }
-                }
-            }
-            
+            //特殊Tile的效果触发
+            finalList.AddRange(EffectTriggered(randomTile));
         }
 
         yield return StartCoroutine(EffectBoomList(finalList));
@@ -809,35 +1047,23 @@ public class BoardManager : MonoBehaviour {
 
     IEnumerator AllBomb(Tile bombTile)
     {
-        List<Tile> allBombList = new List<Tile>();
-        allBombList.Add(bombTile);
+        List<Tile> tempList = new List<Tile>();
+        tempList.Add(bombTile);
         foreach (Tile anyTile in Tiles)
         {
+            if (anyTile == null) continue;
             if (anyTile.sprite.spriteName.Substring(0, 2) == bombTile.sprite.spriteName.Substring(0, 2))
             {
-                anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + "_30";
-                allBombList.Add(anyTile);
+                anyTile.sprite.spriteName = anyTile.sprite.spriteName.Substring(0, 2) + Bomb;
+                tempList.Add(anyTile);
             }
-
         }
-
         List<Tile> finalList = new List<Tile>();
-        finalList.AddRange(allBombList);
-        foreach (Tile bomb in finalList)
+        foreach (Tile bomb in tempList)
         {
-            foreach(Tile nearTile in Tiles)
-            {
-                if (bomb == null || nearTile == null) continue;
-                int distance = Mathf.Abs(nearTile.tileColumn - bomb.tileColumn) + Mathf.Abs(nearTile.tileRow - bomb.tileRow);
-                if (distance > 0 && distance <= 2)
-                {
-                    allBombList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
-                }
-            }
-            
+            //特殊Tile的效果触发
+            finalList.AddRange(EffectTriggered(bomb));
         }
-
-        finalList.AddRange(allBombList);
 
         yield return StartCoroutine(EffectBoomList(finalList));
 
@@ -851,70 +1077,27 @@ public class BoardManager : MonoBehaviour {
 
     IEnumerator AllGem(Tile gemTile)
     {
-        List<Tile> allGemList = new List<Tile>();
-        allGemList.Add(gemTile);
+        List<Tile> tempList = new List<Tile>();
+
         foreach (Tile anyTile in Tiles)
         {
+            if (anyTile == null) continue;
             if (anyTile.sprite.spriteName.Substring(0, 2) == gemTile.sprite.spriteName.Substring(0, 2))
             {
-                allGemList.Add(anyTile);
+                tempList.Add(anyTile);
             }
         }
 
         List<Tile> finalList = new List<Tile>();
-        finalList.AddRange(allGemList);
+        finalList.AddRange(tempList);
 
         foreach (Tile gem in finalList)
         {
             //特殊Tile的效果触发
-            if (gem.sprite.spriteName.Length > 2)
-            {
-                allGemList.Add(gem);
-                string end = gem.sprite.spriteName.Substring(2, 3);
-                switch (end)
-                {
-                    case "_10":
-                        foreach (Tile rowTile in Tiles)
-                        {
-                            if (gem == null || rowTile == null) continue;
-                            if (rowTile.tileRow == gem.tileRow && rowTile.tileColumn != gem.tileColumn)
-                            {
-                                allGemList.Add(Tiles[rowTile.tileRow, rowTile.tileColumn]);
-                            }
-                        }
-                        break;
-                    case "_20":
-                        foreach (Tile columnTile in Tiles)
-                        {
-                            if (gem == null || columnTile == null) continue;
-                            if (columnTile.tileColumn == gem.tileColumn && columnTile.tileRow != gem.tileRow)
-                            {
-                                allGemList.Add(Tiles[columnTile.tileRow, columnTile.tileColumn]);
-                            }
-                        }
-                        break;
-                    case "_30":
-                        foreach (Tile nearTile in Tiles)
-                        {
-                            if (gem == null || nearTile == null) continue;
-                            int distance = Mathf.Abs(nearTile.tileColumn - gem.tileColumn) + Mathf.Abs(nearTile.tileRow - gem.tileRow);
-                            if (distance > 0 && distance <= 2)
-                            {
-                                allGemList.Add(Tiles[nearTile.tileRow, nearTile.tileColumn]);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                Tiles[gem.tileRow, gem.tileColumn] = null;
-            }
+            tempList.AddRange(EffectTriggered(gem));
         }
 
-        finalList.AddRange(allGemList);
+        finalList.AddRange(tempList);
 
         yield return StartCoroutine(EffectBoomList(finalList));
 
@@ -933,44 +1116,118 @@ public class BoardManager : MonoBehaviour {
     /// <returns>The drop.</returns>
     IEnumerator ItemsDrop()
 	{
-		isOperation = true;
-		//逐列检测
-		for (int i = 0; i < BoardColumn; i++) {
-			//计数器
-			int count = 0;
-			//下落队列
-			Queue<Tile> dropQueue = new Queue<Tile> ();
-			//逐行检测
-			for (int j = 0; j < BoardRow; j++) {
-				if (Tiles [j, i] != null) {
-					//计数
-					count++;
-					//放入队列
-					dropQueue.Enqueue(Tiles [j, i]);
-				}
-			}
-			//下落
-			for (int k = 0; k < count; k++) {
-				//获取要下落的Item
-				Tile current = dropQueue.Dequeue ();
-				//修改全局数组(原位置情况)
-				Tiles[current.tileRow,current.tileColumn] = null;
-				//修改Item的行数
-				current.tileRow = k;
-				//修改全局数组(填充新位置)
-				Tiles[current.tileRow,current.tileColumn] = current;
-				//下落
-				current.GetComponent<ItemOperation>().
-					CurrentItemDrop(TilePos[current.tileRow,current.tileColumn]);
-			}
-		}
+        isOperation = true;
 
-		yield return new WaitForSeconds (0.2f);
+        //逐列检测
+        for (int i = 0; i < BoardColumn; i++)
+        {
+            //计数器
+            int count = 0;
+            //下落队列
+            Queue<Tile> dropQueue = new Queue<Tile>();
+            //逐行检测
+            int cageRow = -1;
+            for (int j = 0; j < BoardRow; j++)
+            {
+                if (Tiles[j, i] != null && Cages[j, i] == null && Blocks[j,i] == null && Obstacles[j,i] == null)
+                {
+                    //计数
+                    count++;
+                    //放入队列
+                    dropQueue.Enqueue(Tiles[j, i]);
+                }
 
-		StartCoroutine (CreateNewItem());
-		yield return new WaitForSeconds (0.2f);
-		ClearAllMatches ();
-	}
+                //遇到障碍或触顶就下落
+                if ((Cages[j, i] != null || Blocks[j,i] != null || Obstacles[j, i] != null) || j == BoardRow - 1)
+                {
+                    //下落
+                    for (int k = 0; k < count; k++)
+                    {
+                        //获取要下落的Item
+                        Tile current = dropQueue.Dequeue();
+                        //修改全局数组(原位置情况)
+                        Tiles[current.row, current.col] = null;
+                        //修改Item的行数
+                        current.row = k + cageRow + 1;
+                        //下落
+                        current.GetComponent<ItemOperation>().TileMove(current.row,i, TilePos[current.row, current.col]);
+                    }
+
+                    cageRow = j;
+                    count = 0;
+                    dropQueue.Clear();
+                    continue;
+                }
+
+            }
+            
+        }
+
+        yield return StartCoroutine(DiagonalDrop());
+        yield return new WaitForSeconds(0.3f);
+        yield return StartCoroutine(CreateNewItem());
+        yield return new WaitForSeconds(0.3f);
+        ClearAllMatches();
+    }
+
+    IEnumerator DiagonalDrop()
+    {
+        //斜向滑落
+        for (int i = 0; i < BoardColumn; i++)
+        {
+            for (int j = 0; j < BoardRow; j++)
+            {
+                if (Tiles[j, i] == null) continue;
+                //获取目标行列
+                int targetRow = j - 1;
+                int targetColumnRight = i + 1;
+                int targetColumnLeft = i - 1;
+                int targetColumn = -1;
+                //检测合法
+                bool isLagalRight = CheckRCLegal(targetRow, targetColumnRight);
+                bool isLagalLeft = CheckRCLegal(targetRow, targetColumnLeft);
+                if (isLagalRight)
+                {
+                    if (Tiles[targetRow, targetColumnRight] == null && Blocks[targetRow, targetColumnRight] == null && Obstacles[targetRow, targetColumnRight] == null
+                        && (Cages[j, targetColumnRight] != null || Blocks[j, targetColumnRight] != null || Obstacles[j, targetColumnRight] != null))
+                    {
+                        targetColumn = targetColumnRight;
+                    }
+                }
+                else if (isLagalLeft)
+                {
+                    if (Tiles[targetRow, targetColumnLeft] == null && Blocks[targetRow, targetColumnLeft] == null && Obstacles[targetRow, targetColumnLeft] == null
+                        && (Cages[j, targetColumnLeft] != null || Blocks[j, targetColumnLeft] != null || Obstacles[j, targetColumnLeft] != null))
+                    {
+                        targetColumn = targetColumnLeft;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (targetColumn != -1)
+                {
+                    Tile current = Tiles[j, i];
+                    //修改全局数组(原位置情况)
+                    Tiles[j, i] = null;
+
+                    //下落
+                    current.GetComponent<ItemOperation>().
+                        TileMove(targetRow, targetColumn, TilePos[targetRow, targetColumn]);
+
+                    //yield return new WaitForSeconds(0.3f);
+
+                    yield return StartCoroutine(ItemsDrop());
+                    yield break;
+                }
+            }
+        }
+
+        
+    }
+
 	/// <summary>
 	/// 生成新的Item
 	/// </summary>
@@ -980,15 +1237,22 @@ public class BoardManager : MonoBehaviour {
 		isOperation = true;
 		for (int i = 0; i < BoardColumn; i++) {
 			int count = 0;
+            int obstacleRow = 0;
 			Queue<GameObject> newItemQueue = new Queue<GameObject> ();
-			for (int j = 0; j < BoardRow; j++) {
-				if (Tiles [j, i] == null) {
-                    //生成一个Item
-                    //GameObject current = Instantiate(Resources.Load<GameObject> (GameManager.Tile));
-                    //						ObjectPool.instance.GetGameObject (Util.Item, transform);
-                    GameObject current = ObjectPool.instance.GetGameObject(GameManager.Tile, transform);
+			for (int j = BoardRow - 1; j >= 0; j--) {
 
-                    //current.transform.parent = transform;
+                if (Cages[j, i] != null || Blocks[j,i] != null || Tiles[j, i] != null || Obstacles[j,i] != null)
+                //if (Cages[j, i] != null)
+                {
+                    obstacleRow = j;
+                    break;
+                }
+                Debug.Log("Obstacles = " + Obstacles[j, i]);
+                if (Tiles [j, i] == null && Blocks[j, i] == null && Obstacles[j,i] == null) {
+
+                    //生成一个Item
+                    GameObject current = ObjectPool.instance.GetGameObject(GameManager.Tile, gameObject.transform);
+
 					current.transform.position = TilePos [BoardRow - 1, i];
 					newItemQueue.Enqueue (current);
 					count++;
@@ -997,6 +1261,7 @@ public class BoardManager : MonoBehaviour {
 			for (int k = 0; k < count; k++) {
 				//获取Item组件
 				Tile currentItem = newItemQueue.Dequeue ().GetComponent<Tile>();
+                currentItem.hasCheck = false;
                 /*
 				//随机数
 				int random = Random.Range (0, randomUISprite.Length);
@@ -1007,16 +1272,19 @@ public class BoardManager : MonoBehaviour {
                 int random = Random.Range(0, randomGemName.Length);
                 //修改脚本中的图片
                 currentItem.sprite.spriteName = randomGemName[random];
+                currentItem.sprite.alpha = 1.0f;
 
                 //修改真实图片
                 //currentItem.Img = randomSprites [random];
-                //获取要移动的行数
+                //获取要移动到的行数
                 int r = BoardRow - count + k;
-				//移动
-				currentItem.GetComponent<ItemOperation> ().ItemMove (r,i,TilePos[r,i]);
+                //移动                
+                currentItem.GetComponent<ItemOperation> ().TileMove (r,i,TilePos[r,i]);
 			}
 		}
-		yield break;
+
+        yield return StartCoroutine(DiagonalDrop());
+        yield break;
 	}
 
 	/// <summary>
@@ -1032,17 +1300,17 @@ public class BoardManager : MonoBehaviour {
 		//如果是横向
 		if (isHorizontal) {
 			//起点终点列号
-			int beginIndex = begin.tileColumn;
-			int endIndex = end.tileColumn;
+			int beginIndex = begin.col;
+			int endIndex = end.col;
 			//如果起点在右，交换起点终点列号
 			if (beginIndex > endIndex) {
-				beginIndex = end.tileColumn;
-				endIndex = begin.tileColumn;
+				beginIndex = end.col;
+				endIndex = begin.col;
 			}
 			//遍历中间的Item
 			for (int i = beginIndex + 1; i < endIndex; i++) {
 				//异常处理（中间之前已被消除，此时未生成，标识为不合法）
-				if (Tiles [begin.tileRow, i] == null)
+				if (Tiles [begin.row, i] == null)
 					return false;
                 /*
 				//如果中间有间隙（有图案不一致的）
@@ -1050,7 +1318,7 @@ public class BoardManager : MonoBehaviour {
 					return false;
 				}*/
                 string currentStart = spr.spriteName.Substring(0, 2);
-                string tempStart = Tiles[begin.tileRow, i].sprite.spriteName.Substring(0, 2);
+                string tempStart = Tiles[begin.row, i].sprite.spriteName.Substring(0, 2);
                 //如果中间有间隙（有图案不一致的）
                 if (currentStart != tempStart)
                 {
@@ -1060,12 +1328,12 @@ public class BoardManager : MonoBehaviour {
 			return true;
 		} else {
 			//起点终点行号
-			int beginIndex = begin.tileRow;
-			int endIndex = end.tileRow;
+			int beginIndex = begin.row;
+			int endIndex = end.row;
 			//如果起点在上，交换起点终点列号
 			if (beginIndex > endIndex) {
-				beginIndex = end.tileRow;
-				endIndex = begin.tileRow;
+				beginIndex = end.row;
+				endIndex = begin.row;
 			}
 			//遍历中间的Item
 			for (int i = beginIndex + 1; i < endIndex; i++) {
@@ -1075,7 +1343,7 @@ public class BoardManager : MonoBehaviour {
 					return false;
 				}*/
                 string currentStart = spr.spriteName.Substring(0, 2);
-                string tempStart = Tiles[i, begin.tileColumn].sprite.spriteName.Substring(0, 2);
+                string tempStart = Tiles[i, begin.col].sprite.spriteName.Substring(0, 2);
                 //如果中间有间隙（有图案不一致的）
                 if (currentStart != tempStart)
                 {
@@ -1099,36 +1367,111 @@ public class BoardManager : MonoBehaviour {
         switch (td)
         {
             case TileDirection.Up:
-                row = current.tileRow + 1;
-                column = current.tileColumn;
+                row = current.row + 1;
+                column = current.col;
                 break;
             case TileDirection.Down:
-                row = current.tileRow - 1;
-                column = current.tileColumn;
+                row = current.row - 1;
+                column = current.col;
                 break;
             case TileDirection.Left:
-                row = current.tileRow;
-                column = current.tileColumn - 1;
+                row = current.row;
+                column = current.col - 1;
                 break;
             case TileDirection.Right:
-                row = current.tileRow;
-                column = current.tileColumn + 1;
+                row = current.row;
+                column = current.col + 1;
                 break;
         }
 		if (!CheckRCLegal (row, column))
 			return null;
 		return Tiles [row, column];
 	}
-	/// <summary>
-	/// 检测行列是否合法
-	/// </summary>
-	/// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
-	/// <param name="itemRow">Item row.</param>
-	/// <param name="itemColumn">Item column.</param>
-	public bool CheckRCLegal(int itemRow,int itemColumn)
+
+    private Block GetBlockByDirection(Tile current, TileDirection td)
+    {
+        int row = -1;
+        int column = -1;
+        switch (td)
+        {
+            case TileDirection.Up:
+                row = current.row + 1;
+                column = current.col;
+                break;
+            case TileDirection.Down:
+                row = current.row - 1;
+                column = current.col;
+                break;
+            case TileDirection.Left:
+                row = current.row;
+                column = current.col - 1;
+                break;
+            case TileDirection.Right:
+                row = current.row;
+                column = current.col + 1;
+                break;
+        }
+        if (!CheckRCLegal(row, column))
+            return null;
+        if (Blocks[row, column] != null) return Blocks[row, column];
+        return null;
+    }
+
+    /// <summary>
+    /// 检测行列是否合法
+    /// </summary>
+    /// <returns><c>true</c>, if RC legal was checked, <c>false</c> otherwise.</returns>
+    /// <param name="itemRow">Item row.</param>
+    /// <param name="itemColumn">Item column.</param>
+    public bool CheckRCLegal(int itemRow,int itemColumn)
 	{
-		if (itemRow >= 0 && itemRow < BoardRow && itemColumn >= 0 && itemColumn < BoardColumn)
+		if (itemRow >= 0 && itemRow < BoardRow && itemColumn >= 0 && itemColumn < BoardColumn && Obstacles[itemRow,itemColumn] == null)
 			return true;
 		return false;
 	}
+
+    //播放特效
+    /// <summary>
+    /// invokeName是当特效播放结束后要触发其他时，添加的回调方法名
+    /// </summary>
+    /// <param name="go"></param>
+    /// <param name="seType"></param>
+    /// <param name="isSelfActive"></param>
+    /// <param name="invokeName"></param>
+    public void GenerateSEAtGameobjectPosition(GameObject go, SEType seType, bool isSelfActive, string invokeName)
+    {
+        //GameObject se = NGUITools.AddChild(Battle.Entity, (GameObject)(Resources.Load("SEPrefabs" + "/" + seName)));
+        GameObject se = null;
+        switch (seType)
+        {
+            case SEType.Normal_Boom:
+                se = NGUITools.AddChild(instance.gameObject, Normal_Boom);
+                break;
+            case SEType.Horizontal_Boom:
+                se = NGUITools.AddChild(instance.gameObject, Horizontal_Boom);
+                break;
+            case SEType.Vertical_Boom:
+                se = NGUITools.AddChild(instance.gameObject, Vertical_Boom);
+                break;
+            case SEType.Bomb_Boom:
+                se = NGUITools.AddChild(instance.gameObject, Bomb_Boom);
+                break;
+            case SEType.All_Boom:
+                se = NGUITools.AddChild(instance.gameObject, All_Boom);
+                break;
+            case SEType.DuoAll_Boom:
+                se = NGUITools.AddChild(instance.gameObject, DuoAll_Boom);
+                break;
+        }
+        se.transform.localScale = new Vector3(80, 80, 1);        //该死的Unity，把动画文件加载的时候默认缩小为1/100了，所以这里要扩大100倍。注意，改Prefabs的缩放比例是没用的
+        NGUITools.SetDirty(instance.gameObject);
+        Transform desGO = go.GetComponent<Transform>();
+        se.transform.localPosition = desGO.localPosition;
+
+        Formula.Btn_IsVisible(go, isSelfActive);
+        if (invokeName != null)
+            Invoke(invokeName, se.GetComponent<Animator>().runtimeAnimatorController.animationClips[0].length);
+
+        Destroy(se, se.GetComponent<Animator>().runtimeAnimatorController.animationClips[0].length);
+    }
 }
